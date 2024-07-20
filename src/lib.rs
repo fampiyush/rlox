@@ -1,6 +1,8 @@
 use ::std::{error::Error, fs, io, process};
 use std::io::Write;
 
+mod token;
+
 // Error display with exit
 pub fn handle_error(err: String) {
     eprintln!("{}", err);
