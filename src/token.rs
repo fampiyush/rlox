@@ -1,12 +1,13 @@
+#[derive(Clone)]
 pub struct Token {
     ttype: TokenType,
     lexeme: String,
-    literal: String,
+    literal: Option<String>,
     line: usize,
 }
 
 impl Token {
-    fn new(ttype: TokenType, lexeme: String, literal: String, line: usize) -> Self {
+    pub fn new(ttype: TokenType, lexeme: String, literal: Option<String>, line: usize) -> Self {
         Token {
             ttype,
             lexeme,
@@ -15,11 +16,17 @@ impl Token {
         }
     }
 
-    fn show(&self) -> String {
-        format!("{} {} {}", self.line, self.lexeme, self.literal)
+    pub fn show(&self) -> String {
+        format!(
+            "{} {} {}",
+            self.line,
+            self.lexeme,
+            self.literal.as_ref().unwrap()
+        )
     }
 }
 
+#[derive(Clone)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,

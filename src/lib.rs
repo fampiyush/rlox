@@ -1,6 +1,7 @@
 use ::std::{error::Error, fs, io, process};
 use std::io::Write;
 
+mod scanner;
 mod token;
 
 // Error display with exit
