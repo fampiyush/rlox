@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Token {
     ttype: TokenType,
     lexeme: String,
@@ -18,15 +18,16 @@ impl Token {
 
     pub fn show(&self) -> String {
         format!(
-            "{} {} {}",
+            "line:{} ttype:{:?} lexeme:{} literal:{}",
             self.line,
+            self.ttype,
             self.lexeme,
-            self.literal.as_ref().unwrap()
+            self.literal.as_deref().unwrap_or("NaN")
         )
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,

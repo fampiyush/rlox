@@ -1,6 +1,8 @@
 use ::std::{error::Error, fs, io, process};
 use std::io::Write;
 
+use scanner::Scanner;
+
 mod scanner;
 mod token;
 
@@ -38,5 +40,10 @@ fn run(content: &str) {
     if content.trim().to_lowercase() == "exit" {
         process::exit(0);
     }
-    print!("{}", content);
+    let mut scanner = Scanner::new(content.trim().to_string());
+    let tokens = scanner.scan_tokens();
+
+    for token in tokens.iter() {
+        println!("{}", token.show());
+    }
 }
