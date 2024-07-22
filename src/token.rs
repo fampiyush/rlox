@@ -2,12 +2,19 @@
 pub struct Token {
     ttype: TokenType,
     lexeme: String,
-    literal: Option<String>,
+    literal: LiteralTypes,
     line: usize,
 }
 
+#[derive(Debug, Clone)]
+pub enum LiteralTypes {
+    String(String),
+    Number(f64),
+    NaN,
+}
+
 impl Token {
-    pub fn new(ttype: TokenType, lexeme: String, literal: Option<String>, line: usize) -> Self {
+    pub fn new(ttype: TokenType, lexeme: String, literal: LiteralTypes, line: usize) -> Self {
         Token {
             ttype,
             lexeme,
@@ -18,11 +25,8 @@ impl Token {
 
     pub fn show(&self) -> String {
         format!(
-            "line:{} ttype:{:?} lexeme:{} literal:{}",
-            self.line,
-            self.ttype,
-            self.lexeme,
-            self.literal.as_deref().unwrap_or("NaN")
+            "line:{} ttype:{:?} lexeme:{} literal:{:?}",
+            self.line, self.ttype, self.lexeme, self.literal
         )
     }
 }
