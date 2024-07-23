@@ -117,6 +117,8 @@ impl Scanner {
             _ => {
                 if c.is_ascii_digit() {
                     self.number();
+                } else if self.is_alpha(c) {
+                    self.identifier();
                 } else {
                     report(self.line, "Unexpected Character");
                 }
@@ -195,5 +197,45 @@ impl Scanner {
 
         let value: f64 = self.source[self.start..self.current].parse().unwrap();
         self.add_token(TokenType::Number, LiteralTypes::Number(value))
+    }
+
+    fn identifier(&mut self) {
+        while self.is_alpha(self.peek()) || self.peek().is_ascii_digit() {
+            self.current += 1;
+        }
+
+        let text = self.source[self.start..self.current].to_string();
+        let ttype = self.get_keyword(&text);
+
+        match ttype {
+            Some(t) => self.add_token(t, LiteralTypes::NaN),
+            None => self.add_token(TokenType::Identifier, LiteralTypes::String(text)),
+        }
+    }
+
+    fn is_alpha(&self, c: u8) -> bool {
+        c.is_ascii_alphabetic() || c == b'_'
+    }
+
+    fn get_keyword(&self, word: &str) -> Option<TokenType> {
+        match word {
+            "and" => Some(TokenType::And),
+            "class" => Some(TokenType::Class),
+            "else" => Some(TokenType::Else),
+            "false" => Some(TokenType::False),
+            "for" => Some(TokenType::For),
+            "fun" => Some(TokenType::Fun),
+            "if" => Some(TokenType::If),
+            "nil" => Some(TokenType::Nil),
+            "or" => Some(TokenType::Or),
+            "print" => Some(TokenType::Print),
+            "return" => Some(TokenType::Return),
+            "super" => Some(TokenType::Super),
+            "this" => Some(TokenType::This),
+            "true" => Some(TokenType::True),
+            "var" => Some(TokenType::Var),
+            "while" => Some(TokenType::While),
+            _ => None,
+        }
     }
 }
