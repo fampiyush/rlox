@@ -117,8 +117,9 @@ impl Scanner {
             _ => {
                 if c.is_ascii_digit() {
                     self.number();
+                } else {
+                    report(self.line, "Unexpected Character");
                 }
-                report(self.line, "Unexpected Character");
             }
         }
     }
