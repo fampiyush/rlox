@@ -3,6 +3,7 @@ use std::io::Write;
 
 use scanner::Scanner;
 
+mod expr;
 mod scanner;
 mod token;
 
