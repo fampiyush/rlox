@@ -32,26 +32,13 @@ pub trait Visitor<T> {
     fn visit_unary(&self, expr: &Unary) -> T;
 }
 
-impl Binary {
+impl Expr {
     pub fn accept<T>(&self, visitor: &dyn Visitor<T>) -> T {
-        visitor.visit_binary(self)
-    }
-}
-
-impl Grouping {
-    pub fn accept<T>(&self, visitor: &dyn Visitor<T>) -> T {
-        visitor.visit_grouping(self)
-    }
-}
-
-impl Literal {
-    pub fn accept<T>(&self, visitor: &dyn Visitor<T>) -> T {
-        visitor.visit_literal(self)
-    }
-}
-
-impl Unary {
-    pub fn accept<T>(&self, visitor: &dyn Visitor<T>) -> T {
-        visitor.visit_unary(self)
+        match self {
+            Expr::Binary(binary) => visitor.visit_binary(binary),
+            Expr::Grouping(grouping) => visitor.visit_grouping(grouping),
+            Expr::Literal(literal) => visitor.visit_literal(literal),
+            Expr::Unary(unary) => visitor.visit_unary(unary),
+        }
     }
 }
