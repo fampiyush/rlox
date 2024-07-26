@@ -7,22 +7,22 @@ pub enum Expr {
 }
 
 pub struct Binary {
-    left: Box<Expr>,
-    operator: Token,
-    right: Box<Expr>,
+    pub left: Box<Expr>,
+    pub operator: Token,
+    pub right: Box<Expr>,
 }
 
 pub struct Grouping {
-    expr: Box<Expr>,
+    pub expr: Box<Expr>,
 }
 
 pub struct Literal {
-    value: LiteralTypes,
+    pub value: LiteralTypes,
 }
 
 pub struct Unary {
-    operator: Token,
-    right: Box<Expr>,
+    pub operator: Token,
+    pub right: Box<Expr>,
 }
 
 pub trait Visitor<T> {

@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
 pub struct Token {
-    ttype: TokenType,
-    lexeme: String,
-    literal: LiteralTypes,
-    line: usize,
+    pub ttype: TokenType,
+    pub lexeme: String,
+    pub literal: LiteralTypes,
+    pub line: usize,
 }
 
 #[derive(Debug, Clone)]
