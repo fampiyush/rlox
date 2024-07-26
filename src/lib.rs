@@ -3,6 +3,7 @@ use std::io::Write;
 
 use scanner::Scanner;
 
+mod ast_printer;
 mod expr;
 mod scanner;
 mod token;
