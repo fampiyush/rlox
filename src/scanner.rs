@@ -199,17 +199,25 @@ impl Scanner {
         self.add_token(TokenType::Number, LiteralTypes::Number(value))
     }
 
+    // Check for either identifier or keywords
     fn identifier(&mut self) {
         while self.is_alpha(self.peek()) || self.peek().is_ascii_digit() {
             self.current += 1;
         }
 
-        let text = self.source[self.start..self.current].to_string();
-        let ttype = self.get_keyword(&text);
+        let text = &self.source[self.start..self.current];
+        let ttype = self.get_keyword(text);
 
         match ttype {
-            Some(t) => self.add_token(t, LiteralTypes::NaN),
-            None => self.add_token(TokenType::Identifier, LiteralTypes::String(text)),
+            Some(t) => match &t {
+                TokenType::True => self.add_token(t, LiteralTypes::Bool(true)),
+                TokenType::False => self.add_token(t, LiteralTypes::Bool(false)),
+                _ => self.add_token(t, LiteralTypes::NaN),
+            },
+            None => self.add_token(
+                TokenType::Identifier,
+                LiteralTypes::String(text.to_string()),
+            ),
         }
     }
 

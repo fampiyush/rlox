@@ -6,10 +6,11 @@ pub struct Token {
     pub line: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LiteralTypes {
     String(String),
     Number(f64),
+    Bool(bool),
     NaN,
 }
 

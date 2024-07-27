@@ -53,6 +53,7 @@ impl Visitor<String> for AstPrinter {
         match &expr.value {
             LiteralTypes::String(val) => val.to_string(),
             LiteralTypes::Number(val) => val.to_string(),
+            LiteralTypes::Bool(val) => val.to_string(),
             LiteralTypes::NaN => "nil".to_string(),
         }
     }
