@@ -33,7 +33,7 @@ impl Scanner {
         self.tokens.push(Token::new(
             TokenType::Eof,
             String::new(),
-            LiteralTypes::NaN,
+            LiteralTypes::Nil,
             self.line,
         ));
 
@@ -44,16 +44,16 @@ impl Scanner {
     fn scan_token(&mut self) {
         let c: u8 = self.advance();
         match c {
-            b'(' => self.add_token(TokenType::LeftParen, LiteralTypes::NaN),
-            b')' => self.add_token(TokenType::RightParen, LiteralTypes::NaN),
-            b'{' => self.add_token(TokenType::LeftBrace, LiteralTypes::NaN),
-            b'}' => self.add_token(TokenType::RightBrace, LiteralTypes::NaN),
-            b',' => self.add_token(TokenType::Comma, LiteralTypes::NaN),
-            b'.' => self.add_token(TokenType::Dot, LiteralTypes::NaN),
-            b'-' => self.add_token(TokenType::Minus, LiteralTypes::NaN),
-            b'+' => self.add_token(TokenType::Plus, LiteralTypes::NaN),
-            b';' => self.add_token(TokenType::Semicolon, LiteralTypes::NaN),
-            b'*' => self.add_token(TokenType::Star, LiteralTypes::NaN),
+            b'(' => self.add_token(TokenType::LeftParen, LiteralTypes::Nil),
+            b')' => self.add_token(TokenType::RightParen, LiteralTypes::Nil),
+            b'{' => self.add_token(TokenType::LeftBrace, LiteralTypes::Nil),
+            b'}' => self.add_token(TokenType::RightBrace, LiteralTypes::Nil),
+            b',' => self.add_token(TokenType::Comma, LiteralTypes::Nil),
+            b'.' => self.add_token(TokenType::Dot, LiteralTypes::Nil),
+            b'-' => self.add_token(TokenType::Minus, LiteralTypes::Nil),
+            b'+' => self.add_token(TokenType::Plus, LiteralTypes::Nil),
+            b';' => self.add_token(TokenType::Semicolon, LiteralTypes::Nil),
+            b'*' => self.add_token(TokenType::Star, LiteralTypes::Nil),
 
             b'!' => {
                 let is_equal = self.is_next_expected(b'=');
@@ -63,7 +63,7 @@ impl Scanner {
                     } else {
                         TokenType::Bang
                     },
-                    LiteralTypes::NaN,
+                    LiteralTypes::Nil,
                 );
             }
             b'=' => {
@@ -74,7 +74,7 @@ impl Scanner {
                     } else {
                         TokenType::Equal
                     },
-                    LiteralTypes::NaN,
+                    LiteralTypes::Nil,
                 );
             }
             b'<' => {
@@ -85,7 +85,7 @@ impl Scanner {
                     } else {
                         TokenType::Less
                     },
-                    LiteralTypes::NaN,
+                    LiteralTypes::Nil,
                 );
             }
             b'>' => {
@@ -96,7 +96,7 @@ impl Scanner {
                     } else {
                         TokenType::Greater
                     },
-                    LiteralTypes::NaN,
+                    LiteralTypes::Nil,
                 );
             }
             b'/' => {
@@ -106,7 +106,7 @@ impl Scanner {
                         self.current += 1;
                     }
                 } else {
-                    self.add_token(TokenType::Slash, LiteralTypes::NaN)
+                    self.add_token(TokenType::Slash, LiteralTypes::Nil)
                 }
             }
 
@@ -212,7 +212,7 @@ impl Scanner {
             Some(t) => match &t {
                 TokenType::True => self.add_token(t, LiteralTypes::Bool(true)),
                 TokenType::False => self.add_token(t, LiteralTypes::Bool(false)),
-                _ => self.add_token(t, LiteralTypes::NaN),
+                _ => self.add_token(t, LiteralTypes::Nil),
             },
             None => self.add_token(
                 TokenType::Identifier,

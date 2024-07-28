@@ -11,7 +11,7 @@ pub enum LiteralTypes {
     String(String),
     Number(f64),
     Bool(bool),
-    NaN,
+    Nil,
 }
 
 impl Token {
@@ -32,7 +32,7 @@ impl Token {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
