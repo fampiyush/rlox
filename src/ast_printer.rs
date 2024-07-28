@@ -1,5 +1,5 @@
 use crate::expr::*;
-use crate::token::{LiteralTypes, Token, TokenType};
+use crate::token::LiteralTypes;
 pub struct AstPrinter;
 
 impl AstPrinter {
@@ -19,25 +19,6 @@ impl AstPrinter {
 
         res
     }
-
-    pub fn example(&self) -> String {
-        let expression = Expr::Binary(Binary {
-            left: Box::new(Expr::Unary(Unary {
-                operator: Token::new(TokenType::Minus, "-".to_string(), LiteralTypes::NaN, 1),
-                right: Box::new(Expr::Literal(Literal {
-                    value: LiteralTypes::Number(123.0),
-                })),
-            })),
-            operator: Token::new(TokenType::Star, "*".to_string(), LiteralTypes::NaN, 1),
-            right: Box::new(Expr::Grouping(Grouping {
-                expr: Box::new(Expr::Literal(Literal {
-                    value: LiteralTypes::Number(45.67),
-                })),
-            })),
-        });
-
-        self.print(&expression)
-    }
 }
 
 impl Visitor<String> for AstPrinter {
@@ -54,7 +35,7 @@ impl Visitor<String> for AstPrinter {
             LiteralTypes::String(val) => val.to_string(),
             LiteralTypes::Number(val) => val.to_string(),
             LiteralTypes::Bool(val) => val.to_string(),
-            LiteralTypes::NaN => "nil".to_string(),
+            LiteralTypes::Nil => "nil".to_string(),
         }
     }
 
@@ -66,10 +47,30 @@ impl Visitor<String> for AstPrinter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::token::*;
+
+    fn example() -> String {
+        let expression = Expr::Binary(Binary {
+            left: Box::new(Expr::Unary(Unary {
+                operator: Token::new(TokenType::Minus, "-".to_string(), LiteralTypes::Nil, 1),
+                right: Box::new(Expr::Literal(Literal {
+                    value: LiteralTypes::Number(123.0),
+                })),
+            })),
+            operator: Token::new(TokenType::Star, "*".to_string(), LiteralTypes::Nil, 1),
+            right: Box::new(Expr::Grouping(Grouping {
+                expr: Box::new(Expr::Literal(Literal {
+                    value: LiteralTypes::Number(45.67),
+                })),
+            })),
+        });
+
+        AstPrinter.print(&expression)
+    }
 
     #[test]
     fn ast_printer_test() {
-        let s = AstPrinter::example(&AstPrinter);
+        let s = example();
         assert_eq!(s, "(* (- 123) (group 45.67))");
     }
 }
