@@ -1,10 +1,14 @@
 use ::std::{error::Error, fs, io, process};
 use std::io::Write;
 
+use ast_printer::AstPrinter;
+use parser::Parser;
 use scanner::Scanner;
+use token::{Token, TokenType};
 
 mod ast_printer;
 mod expr;
+mod parser;
 mod scanner;
 mod token;
 
@@ -17,7 +21,18 @@ pub fn handle_error(err: String) {
 // For handling language errors
 pub fn report(line: usize, message: &str) {
     let err = format!("[Line {}] Error: {}", line, message);
-    handle_error(err);
+    eprintln!("{}", err);
+}
+
+pub fn error(token: Token, message: &str) {
+    if token.ttype == TokenType::Eof {
+        report(token.line, &("at end ".to_owned() + message));
+    } else {
+        report(
+            token.line,
+            &("at '".to_owned() + &token.lexeme + "'. " + message),
+        );
+    }
 }
 
 // Called when no argument is provided
@@ -45,7 +60,11 @@ fn run(content: &str) {
     let mut scanner = Scanner::new(content.trim().to_string());
     let tokens = scanner.scan_tokens();
 
-    for token in tokens.iter() {
-        println!("{}", token.show());
+    let mut parser = Parser::new(tokens);
+    let expr = parser.parse();
+
+    match &expr {
+        Ok(e) => println!("{}", AstPrinter.print(e)),
+        Err(_) => (),
     }
 }
