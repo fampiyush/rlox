@@ -181,12 +181,13 @@ impl Parser {
         self.tokens[self.current - 1].clone()
     }
 
-    fn consume(&self, ttype: TokenType, message: &str) -> Result<(), ParserError> {
+    fn consume(&mut self, ttype: TokenType, message: &str) -> Result<(), ParserError> {
         if !self.check(&ttype) {
             self.error(self.peek(), message);
             return Err(ParserError {});
         }
 
+        self.advance();
         Ok(())
     }
 
