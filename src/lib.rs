@@ -1,7 +1,7 @@
 use ::std::{error::Error, fs, io, process};
 use std::io::Write;
 
-use ast_printer::AstPrinter;
+use interpreter::Interpreter;
 use parser::Parser;
 use scanner::Scanner;
 use token::{Token, TokenType};
@@ -65,7 +65,15 @@ fn run(content: &str) {
     let expr = parser.parse();
 
     match &expr {
-        Ok(e) => println!("{}", AstPrinter.print(e)),
-        Err(_) => (),
+        Ok(e) => {
+            let interpreter = Interpreter::new();
+            let interpreted = interpreter.interpret(e);
+
+            match &interpreted {
+                Ok(i) => eprintln!("{}", Interpreter::stringify(i)),
+                Err(_) => process::exit(70),
+            }
+        }
+        Err(_) => process::exit(65),
     }
 }
