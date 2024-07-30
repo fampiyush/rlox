@@ -8,6 +8,7 @@ use token::{Token, TokenType};
 
 mod ast_printer;
 mod expr;
+mod interpreter;
 mod parser;
 mod scanner;
 mod token;
