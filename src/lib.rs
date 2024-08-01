@@ -11,6 +11,7 @@ mod expr;
 mod interpreter;
 mod parser;
 mod scanner;
+mod stmt;
 mod token;
 
 // Error display with exit
@@ -62,15 +63,15 @@ fn run(content: &str) {
     let tokens = scanner.scan_tokens();
 
     let mut parser = Parser::new(tokens);
-    let expr = parser.parse();
+    let statements = parser.parse();
 
-    match &expr {
+    match &statements {
         Ok(e) => {
             let interpreter = Interpreter::new();
             let interpreted = interpreter.interpret(e);
 
             match &interpreted {
-                Ok(i) => eprintln!("{}", Interpreter::stringify(i)),
+                Ok(_) => (),
                 Err(_) => process::exit(70),
             }
         }
