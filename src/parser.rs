@@ -1,5 +1,6 @@
 use crate::{
     expr::*,
+    stmt::{Expression, Print, Stmt},
     token::{
         LiteralTypes, Token,
         TokenType::{self, *},
@@ -11,6 +12,7 @@ pub struct Parser {
     current: usize,
 }
 
+#[derive(Debug)]
 pub struct ParserError {}
 
 impl Parser {
@@ -18,8 +20,46 @@ impl Parser {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, ParserError> {
-        self.expression()
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, ParserError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+        let mut error = false;
+        while !self.is_at_end() {
+            let s = self.statement();
+            match &s {
+                Ok(_) => statements.push(s.unwrap()),
+                Err(_) => error = true,
+            }
+        }
+
+        if error {
+            Err(ParserError {})
+        } else {
+            Ok(statements)
+        }
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ParserError> {
+        if self.token_match(&[Print]) {
+            return self.print_statement();
+        }
+
+        self.expression_statement()
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ParserError> {
+        let value = self.expression()?;
+        self.consume(Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Print(Print {
+            expression: Box::new(value),
+        }))
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
+        let expr = self.expression()?;
+        self.consume(Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Expression(Expression {
+            expression: Box::new(expr),
+        }))
     }
 
     fn expression(&mut self) -> Result<Expr, ParserError> {

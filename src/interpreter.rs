@@ -1,5 +1,6 @@
-use crate::expr::*;
+use crate::expr::{self, *};
 use crate::report;
+use crate::stmt::{self, *};
 use crate::token::{LiteralTypes, TokenType};
 
 pub struct Interpreter {}
@@ -11,8 +12,25 @@ impl Interpreter {
         Interpreter {}
     }
 
-    pub fn interpret(&self, expr: &Expr) -> Result<LiteralTypes, RuntimeError> {
-        self.evaluate(expr)
+    pub fn interpret(&self, statements: &[Stmt]) -> Result<(), RuntimeError> {
+        let mut has_error = false;
+        for statement in statements.iter() {
+            let s = self.execute(statement);
+            match &s {
+                Ok(_) => (),
+                Err(_) => has_error = true,
+            }
+        }
+
+        if has_error {
+            Err(RuntimeError {})
+        } else {
+            Ok(())
+        }
+    }
+
+    fn execute(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+        stmt.accept(self)
     }
 
     fn evaluate(&self, expr: &Expr) -> Result<LiteralTypes, RuntimeError> {
@@ -49,7 +67,7 @@ impl Interpreter {
         }
     }
 
-    pub fn stringify(ltype: &LiteralTypes) -> String {
+    pub fn stringify(&self, ltype: &LiteralTypes) -> String {
         match ltype {
             LiteralTypes::Nil => "nil".to_string(),
             LiteralTypes::Number(num) => {
@@ -65,7 +83,20 @@ impl Interpreter {
     }
 }
 
-impl Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
+impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
+    fn visit_expression(&self, expr: &Expression) -> Result<(), RuntimeError> {
+        self.evaluate(&expr.expression)?;
+        Ok(())
+    }
+
+    fn visit_print(&self, expr: &Print) -> Result<(), RuntimeError> {
+        let value = self.evaluate(&expr.expression)?;
+        println!("{}", self.stringify(&value));
+        Ok(())
+    }
+}
+
+impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
     fn visit_literal(&self, expr: &Literal) -> Result<LiteralTypes, RuntimeError> {
         Ok(expr.value.clone())
     }
