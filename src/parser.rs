@@ -179,6 +179,7 @@ impl Parser {
             }
             _ => {
                 self.error(self.peek(), "Expect expression.");
+                self.advance();
                 Err(ParserError {})
             }
         }
@@ -223,7 +224,7 @@ impl Parser {
 
     fn consume(&mut self, ttype: TokenType, message: &str) -> Result<(), ParserError> {
         if !self.check(&ttype) {
-            self.error(self.peek(), message);
+            self.error(&self.previous(), message);
             return Err(ParserError {});
         }
 
