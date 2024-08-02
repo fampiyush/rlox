@@ -1,6 +1,6 @@
 use crate::{
     expr::*,
-    stmt::{Expression, Print, Stmt},
+    stmt::{Expression, Print, Stmt, Var},
     token::{
         LiteralTypes, Token,
         TokenType::{self, *},
@@ -24,7 +24,7 @@ impl Parser {
         let mut statements: Vec<Stmt> = Vec::new();
         let mut error = false;
         while !self.is_at_end() {
-            let s = self.statement();
+            let s = self.declaration();
             match &s {
                 Ok(_) => statements.push(s.unwrap()),
                 Err(_) => error = true,
@@ -36,6 +36,40 @@ impl Parser {
         } else {
             Ok(statements)
         }
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, ParserError> {
+        let mut res: Result<Stmt, ParserError>;
+        if self.token_match(&[Var]) {
+            res = self.var_declaration();
+        } else {
+            res = self.statement();
+        }
+
+        match &res {
+            Ok(_) => res,
+            Err(_) => {
+                self.synchronize();
+                Err(ParserError {})
+            }
+        }
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, ParserError> {
+        let name = self.consume(Identifier, "Expect variable name.")?;
+
+        let mut initializer = Expr::Literal(Literal {
+            value: LiteralTypes::Nil,
+        });
+        if self.token_match(&[Equal]) {
+            initializer = self.expression()?;
+        }
+
+        self.consume(Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Var(Var {
+            name,
+            initializer: Box::new(initializer),
+        }))
     }
 
     fn statement(&mut self) -> Result<Stmt, ParserError> {
@@ -144,33 +178,24 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr, ParserError> {
+        self.advance();
         match self.peek().ttype {
-            False => {
-                self.advance();
-                Ok(Expr::Literal(Literal {
-                    value: LiteralTypes::Bool(false),
-                }))
-            }
-            True => {
-                self.advance();
-                Ok(Expr::Literal(Literal {
-                    value: LiteralTypes::Bool(true),
-                }))
-            }
-            Nil => {
-                self.advance();
-                Ok(Expr::Literal(Literal {
-                    value: LiteralTypes::Nil,
-                }))
-            }
-            Number | String => {
-                self.advance();
-                Ok(Expr::Literal(Literal {
-                    value: self.previous().literal,
-                }))
-            }
+            False => Ok(Expr::Literal(Literal {
+                value: LiteralTypes::Bool(false),
+            })),
+            True => Ok(Expr::Literal(Literal {
+                value: LiteralTypes::Bool(true),
+            })),
+            Nil => Ok(Expr::Literal(Literal {
+                value: LiteralTypes::Nil,
+            })),
+            Number | String => Ok(Expr::Literal(Literal {
+                value: self.previous().literal,
+            })),
+            Identifier => Ok(Expr::Variable(Variable {
+                name: self.previous(),
+            })),
             LeftParen => {
-                self.advance();
                 let expr = self.expression()?;
                 self.consume(RightParen, "Expect ')' after expression.")?;
                 Ok(Expr::Grouping(Grouping {
@@ -179,7 +204,6 @@ impl Parser {
             }
             _ => {
                 self.error(self.peek(), "Expect expression.");
-                self.advance();
                 Err(ParserError {})
             }
         }
@@ -222,14 +246,14 @@ impl Parser {
         self.tokens[self.current - 1].clone()
     }
 
-    fn consume(&mut self, ttype: TokenType, message: &str) -> Result<(), ParserError> {
+    fn consume(&mut self, ttype: TokenType, message: &str) -> Result<Token, ParserError> {
         if !self.check(&ttype) {
             self.error(&self.previous(), message);
             return Err(ParserError {});
         }
 
         self.advance();
-        Ok(())
+        Ok(self.previous())
     }
 
     fn error(&self, token: &Token, message: &str) {

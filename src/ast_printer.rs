@@ -42,6 +42,10 @@ impl Visitor<String> for AstPrinter {
     fn visit_unary(&self, expr: &Unary) -> String {
         self.parenthesize(&expr.operator.lexeme, &[&expr.right])
     }
+
+    fn visit_variable(&self, expr: &Variable) -> String {
+        "".to_string()
+    }
 }
 
 #[cfg(test)]
