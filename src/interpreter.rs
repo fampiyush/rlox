@@ -1,18 +1,23 @@
+use crate::environment::Environment;
 use crate::expr::{self, *};
 use crate::report;
 use crate::stmt::{self, *};
 use crate::token::{LiteralTypes, TokenType};
 
-pub struct Interpreter {}
+pub struct Interpreter {
+    environment: Environment,
+}
 
 pub struct RuntimeError {}
 
 impl Interpreter {
     pub fn new() -> Self {
-        Interpreter {}
+        Interpreter {
+            environment: Environment::new(),
+        }
     }
 
-    pub fn interpret(&self, statements: &[Stmt]) -> Result<(), RuntimeError> {
+    pub fn interpret(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
         let mut has_error = false;
         for statement in statements.iter() {
             let s = self.execute(statement);
@@ -29,7 +34,7 @@ impl Interpreter {
         }
     }
 
-    fn execute(&self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         stmt.accept(self)
     }
 
@@ -84,14 +89,27 @@ impl Interpreter {
 }
 
 impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
-    fn visit_expression(&self, expr: &Expression) -> Result<(), RuntimeError> {
-        self.evaluate(&expr.expression)?;
+    fn visit_expression(&self, stmt: &Expression) -> Result<(), RuntimeError> {
+        self.evaluate(&stmt.expression)?;
         Ok(())
     }
 
-    fn visit_print(&self, expr: &Print) -> Result<(), RuntimeError> {
-        let value = self.evaluate(&expr.expression)?;
+    fn visit_print(&self, stmt: &Print) -> Result<(), RuntimeError> {
+        let value = self.evaluate(&stmt.expression)?;
         println!("{}", self.stringify(&value));
+        Ok(())
+    }
+
+    fn visit_var(&mut self, stmt: &Var) -> Result<(), RuntimeError> {
+        let value = if let Expr::Literal(Literal {
+            value: LiteralTypes::Nil,
+        }) = *stmt.initializer
+        {
+            LiteralTypes::Nil
+        } else {
+            self.evaluate(&stmt.initializer)?
+        };
+        self.environment.define(stmt.name.lexeme.clone(), value);
         Ok(())
     }
 }
@@ -119,6 +137,10 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
             TokenType::Bang => Ok(LiteralTypes::Bool(!self.is_truthy(right))),
             _ => unreachable!(),
         }
+    }
+
+    fn visit_variable(&self, expr: &Variable) -> Result<LiteralTypes, RuntimeError> {
+        self.environment.get(&expr.name)
     }
 
     fn visit_binary(&self, expr: &Binary) -> Result<LiteralTypes, RuntimeError> {

@@ -39,12 +39,11 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParserError> {
-        let mut res: Result<Stmt, ParserError>;
-        if self.token_match(&[Var]) {
-            res = self.var_declaration();
+        let res = if self.token_match(&[Var]) {
+            self.var_declaration()
         } else {
-            res = self.statement();
-        }
+            self.statement()
+        };
 
         match &res {
             Ok(_) => res,
@@ -178,24 +177,39 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr, ParserError> {
-        self.advance();
         match self.peek().ttype {
-            False => Ok(Expr::Literal(Literal {
-                value: LiteralTypes::Bool(false),
-            })),
-            True => Ok(Expr::Literal(Literal {
-                value: LiteralTypes::Bool(true),
-            })),
-            Nil => Ok(Expr::Literal(Literal {
-                value: LiteralTypes::Nil,
-            })),
-            Number | String => Ok(Expr::Literal(Literal {
-                value: self.previous().literal,
-            })),
-            Identifier => Ok(Expr::Variable(Variable {
-                name: self.previous(),
-            })),
+            False => {
+                self.advance();
+                Ok(Expr::Literal(Literal {
+                    value: LiteralTypes::Bool(false),
+                }))
+            }
+            True => {
+                self.advance();
+                Ok(Expr::Literal(Literal {
+                    value: LiteralTypes::Bool(true),
+                }))
+            }
+            Nil => {
+                self.advance();
+                Ok(Expr::Literal(Literal {
+                    value: LiteralTypes::Nil,
+                }))
+            }
+            Number | String => {
+                self.advance();
+                Ok(Expr::Literal(Literal {
+                    value: self.previous().literal,
+                }))
+            }
+            Identifier => {
+                self.advance();
+                Ok(Expr::Variable(Variable {
+                    name: self.previous(),
+                }))
+            }
             LeftParen => {
+                self.advance();
                 let expr = self.expression()?;
                 self.consume(RightParen, "Expect ')' after expression.")?;
                 Ok(Expr::Grouping(Grouping {
@@ -204,6 +218,7 @@ impl Parser {
             }
             _ => {
                 self.error(self.peek(), "Expect expression.");
+                self.advance();
                 Err(ParserError {})
             }
         }

@@ -43,7 +43,7 @@ impl Visitor<String> for AstPrinter {
         self.parenthesize(&expr.operator.lexeme, &[&expr.right])
     }
 
-    fn visit_variable(&self, expr: &Variable) -> String {
+    fn visit_variable(&self, _expr: &Variable) -> String {
         "".to_string()
     }
 }
