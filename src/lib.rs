@@ -7,6 +7,7 @@ use scanner::Scanner;
 use token::{Token, TokenType};
 
 mod ast_printer;
+mod environment;
 mod expr;
 mod interpreter;
 mod parser;
@@ -72,7 +73,7 @@ fn run(content: &str) {
 
     match &statements {
         Ok(e) => {
-            let interpreter = Interpreter::new();
+            let mut interpreter = Interpreter::new();
             let interpreted = interpreter.interpret(e);
 
             match &interpreted {
