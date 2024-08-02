@@ -50,9 +50,14 @@ pub fn run_prompt() {
 
 // Called when an argument is provided
 pub fn run_file(arg: &str) -> Result<(), Box<dyn Error>> {
-    let content = fs::read_to_string(arg)?;
-    run(&content);
-    Ok(())
+    let content = fs::read_to_string(arg);
+    match &content {
+        Ok(c) => {
+            run(c);
+            Ok(())
+        }
+        Err(_) => Err(format!("Error reading file '{}'", arg).into()),
+    }
 }
 
 fn run(content: &str) {
