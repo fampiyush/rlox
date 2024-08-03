@@ -6,7 +6,6 @@ use parser::Parser;
 use scanner::Scanner;
 use token::{Token, TokenType};
 
-mod ast_printer;
 mod environment;
 mod expr;
 mod interpreter;

@@ -1,10 +1,16 @@
 use crate::token::{LiteralTypes, Token};
 pub enum Expr {
+    Assignment(Assignment),
     Binary(Binary),
     Grouping(Grouping),
     Literal(Literal),
     Unary(Unary),
     Variable(Variable),
+}
+
+pub struct Assignment {
+    pub name: Token,
+    pub value: Box<Expr>,
 }
 
 pub struct Binary {
@@ -31,16 +37,18 @@ pub struct Variable {
 }
 
 pub trait Visitor<T> {
-    fn visit_binary(&self, expr: &Binary) -> T;
-    fn visit_grouping(&self, expr: &Grouping) -> T;
+    fn visit_assignment(&mut self, expr: &Assignment) -> T;
+    fn visit_binary(&mut self, expr: &Binary) -> T;
+    fn visit_grouping(&mut self, expr: &Grouping) -> T;
     fn visit_literal(&self, expr: &Literal) -> T;
-    fn visit_unary(&self, expr: &Unary) -> T;
-    fn visit_variable(&self, expr: &Variable) -> T;
+    fn visit_unary(&mut self, expr: &Unary) -> T;
+    fn visit_variable(&mut self, expr: &Variable) -> T;
 }
 
 impl Expr {
-    pub fn accept<T>(&self, visitor: &dyn Visitor<T>) -> T {
+    pub fn accept<T>(&self, visitor: &mut dyn Visitor<T>) -> T {
         match self {
+            Expr::Assignment(assignment) => visitor.visit_assignment(assignment),
             Expr::Binary(binary) => visitor.visit_binary(binary),
             Expr::Grouping(grouping) => visitor.visit_grouping(grouping),
             Expr::Literal(literal) => visitor.visit_literal(literal),

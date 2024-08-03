@@ -38,7 +38,7 @@ impl Interpreter {
         stmt.accept(self)
     }
 
-    fn evaluate(&self, expr: &Expr) -> Result<LiteralTypes, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralTypes, RuntimeError> {
         expr.accept(self)
     }
 
@@ -89,12 +89,12 @@ impl Interpreter {
 }
 
 impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
-    fn visit_expression(&self, stmt: &Expression) -> Result<(), RuntimeError> {
+    fn visit_expression(&mut self, stmt: &Expression) -> Result<(), RuntimeError> {
         self.evaluate(&stmt.expression)?;
         Ok(())
     }
 
-    fn visit_print(&self, stmt: &Print) -> Result<(), RuntimeError> {
+    fn visit_print(&mut self, stmt: &Print) -> Result<(), RuntimeError> {
         let value = self.evaluate(&stmt.expression)?;
         println!("{}", self.stringify(&value));
         Ok(())
@@ -119,11 +119,17 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
         Ok(expr.value.clone())
     }
 
-    fn visit_grouping(&self, expr: &Grouping) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_grouping(&mut self, expr: &Grouping) -> Result<LiteralTypes, RuntimeError> {
         self.evaluate(&expr.expr)
     }
 
-    fn visit_unary(&self, expr: &Unary) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_assignment(&mut self, expr: &Assignment) -> Result<LiteralTypes, RuntimeError> {
+        let value = self.evaluate(&expr.value)?;
+        self.environment.assign(&expr.name, value.clone())?;
+        Ok(value)
+    }
+
+    fn visit_unary(&mut self, expr: &Unary) -> Result<LiteralTypes, RuntimeError> {
         let right = self.evaluate(&expr.right)?;
 
         match &expr.operator.ttype {
@@ -139,11 +145,11 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
         }
     }
 
-    fn visit_variable(&self, expr: &Variable) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_variable(&mut self, expr: &Variable) -> Result<LiteralTypes, RuntimeError> {
         self.environment.get(&expr.name)
     }
 
-    fn visit_binary(&self, expr: &Binary) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, RuntimeError> {
         let left = self.evaluate(&expr.left)?;
         let right = self.evaluate(&expr.right)?;
 

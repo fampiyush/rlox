@@ -20,8 +20,8 @@ pub struct Var {
 }
 
 pub trait Visitor<T> {
-    fn visit_expression(&self, stmt: &Expression) -> T;
-    fn visit_print(&self, stmt: &Print) -> T;
+    fn visit_expression(&mut self, stmt: &Expression) -> T;
+    fn visit_print(&mut self, stmt: &Print) -> T;
     fn visit_var(&mut self, stmt: &Var) -> T;
 }
 

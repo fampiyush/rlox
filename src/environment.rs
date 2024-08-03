@@ -29,4 +29,14 @@ impl Environment {
             Err(RuntimeError {})
         }
     }
+
+    pub fn assign(&mut self, name: &Token, value: LiteralTypes) -> Result<(), RuntimeError> {
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.clone(), value);
+            Ok(())
+        } else {
+            report(name.line, &format!("Undefined variable '{}'.", name.lexeme));
+            Err(RuntimeError {})
+        }
+    }
 }
