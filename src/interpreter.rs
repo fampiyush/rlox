@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::environment::Environment;
 use crate::expr::{self, *};
 use crate::report;
@@ -5,7 +8,7 @@ use crate::stmt::{self, *};
 use crate::token::{LiteralTypes, TokenType};
 
 pub struct Interpreter {
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
 }
 
 pub struct RuntimeError {}
@@ -13,7 +16,7 @@ pub struct RuntimeError {}
 impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
-            environment: Environment::new(),
+            environment: Rc::new(RefCell::new(Environment::new())),
         }
     }
 
@@ -86,6 +89,28 @@ impl Interpreter {
             LiteralTypes::Bool(b) => b.to_string(),
         }
     }
+
+    fn execute_block(
+        &mut self,
+        statements: &[Stmt],
+        environment: Environment,
+    ) -> Result<(), RuntimeError> {
+        let previous = self.environment.clone();
+        self.environment = Rc::new(RefCell::new(environment));
+        let mut is_error = false;
+        for statement in statements.iter() {
+            let e = self.execute(statement);
+            if e.is_err() {
+                is_error = true
+            }
+        }
+        self.environment = previous;
+        if is_error {
+            Err(RuntimeError {})
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
@@ -109,7 +134,17 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
         } else {
             self.evaluate(&stmt.initializer)?
         };
-        self.environment.define(stmt.name.lexeme.clone(), value);
+        self.environment
+            .borrow_mut()
+            .define(stmt.name.lexeme.clone(), value);
+        Ok(())
+    }
+
+    fn visit_block(&mut self, stmt: &Block) -> Result<(), RuntimeError> {
+        self.execute_block(
+            &stmt.statements,
+            Environment::new_with_enclosing(self.environment.clone()),
+        )?;
         Ok(())
     }
 }
@@ -125,7 +160,9 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
 
     fn visit_assignment(&mut self, expr: &Assignment) -> Result<LiteralTypes, RuntimeError> {
         let value = self.evaluate(&expr.value)?;
-        self.environment.assign(&expr.name, value.clone())?;
+        self.environment
+            .borrow_mut()
+            .assign(&expr.name, value.clone())?;
         Ok(value)
     }
 
@@ -146,7 +183,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
     }
 
     fn visit_variable(&mut self, expr: &Variable) -> Result<LiteralTypes, RuntimeError> {
-        self.environment.get(&expr.name)
+        self.environment.borrow().get(&expr.name)
     }
 
     fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, RuntimeError> {

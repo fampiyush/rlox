@@ -1,6 +1,6 @@
 use crate::{
     expr::*,
-    stmt::{Expression, Print, Stmt, Var},
+    stmt::{Block, Expression, Print, Stmt, Var},
     token::{
         LiteralTypes, Token,
         TokenType::{self, *},
@@ -74,9 +74,24 @@ impl Parser {
     fn statement(&mut self) -> Result<Stmt, ParserError> {
         if self.token_match(&[Print]) {
             return self.print_statement();
+        } else if self.token_match(&[LeftBrace]) {
+            return Ok(Stmt::Block(Block {
+                statements: self.block()?,
+            }));
         }
 
         self.expression_statement()
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmt>, ParserError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+
+        while !self.check(&RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        }
+
+        self.consume(RightBrace, "Expect '}' after block.")?;
+        Ok(statements)
     }
 
     fn print_statement(&mut self) -> Result<Stmt, ParserError> {
