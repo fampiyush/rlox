@@ -28,7 +28,7 @@ pub struct Block {
 pub struct If {
     pub condition: Box<Expr>,
     pub then_branch: Box<Stmt>,
-    pub else_branch: Box<Stmt>,
+    pub else_branch: Option<Box<Stmt>>,
 }
 
 pub trait Visitor<T> {
