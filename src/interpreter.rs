@@ -147,6 +147,17 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
         )?;
         Ok(())
     }
+
+    fn visit_if(&mut self, stmt: &If) -> Result<(), RuntimeError> {
+        let ltype = self.evaluate(&stmt.condition)?;
+        if self.is_truthy(ltype) {
+            self.execute(&stmt.then_branch)?;
+        } else if let Some(else_branch) = stmt.else_branch.as_ref() {
+            self.execute(else_branch)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {

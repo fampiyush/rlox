@@ -1,6 +1,6 @@
 use crate::{
     expr::*,
-    stmt::{Block, Expression, Print, Stmt, Var},
+    stmt::{Block, Expression, If, Print, Stmt, Var},
     token::{
         LiteralTypes, Token,
         TokenType::{self, *},
@@ -78,6 +78,8 @@ impl Parser {
             return Ok(Stmt::Block(Block {
                 statements: self.block()?,
             }));
+        } else if self.token_match(&[If]) {
+            return self.if_statement();
         }
 
         self.expression_statement()
@@ -99,6 +101,25 @@ impl Parser {
         self.consume(Semicolon, "Expect ';' after value.")?;
         Ok(Stmt::Print(Print {
             expression: Box::new(value),
+        }))
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(LeftParen, "Expect '(' after if.")?;
+        let condition = self.expression()?;
+        self.consume(RightParen, "Expect ')' after if condition.")?;
+
+        let then_branch = self.statement()?;
+        let else_branch = if self.token_match(&[Else]) {
+            Some(self.statement()?)
+        } else {
+            None
+        };
+
+        Ok(Stmt::If(If {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch),
+            else_branch: else_branch.map(Box::new),
         }))
     }
 
