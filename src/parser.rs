@@ -341,8 +341,7 @@ impl Parser {
             }
 
             match self.peek().ttype {
-                Class | Fun | Var | For | If | While | Print => (),
-                Return => return,
+                Class | Fun | Var | For | If | While | Print | Return => return,
                 _ => self.advance(),
             }
         }
