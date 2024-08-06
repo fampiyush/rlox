@@ -45,7 +45,7 @@ impl Interpreter {
         expr.accept(self)
     }
 
-    fn is_truthy(&self, ltype: LiteralTypes) -> bool {
+    fn is_truthy(&self, ltype: &LiteralTypes) -> bool {
         match &ltype {
             LiteralTypes::Nil => false,
             LiteralTypes::Bool(b) => *b,
@@ -150,10 +150,22 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
 
     fn visit_if(&mut self, stmt: &If) -> Result<(), RuntimeError> {
         let ltype = self.evaluate(&stmt.condition)?;
-        if self.is_truthy(ltype) {
+        if self.is_truthy(&ltype) {
             self.execute(&stmt.then_branch)?;
         } else if let Some(else_branch) = stmt.else_branch.as_ref() {
             self.execute(else_branch)?;
+        }
+
+        Ok(())
+    }
+
+    fn visit_while(&mut self, stmt: &While) -> Result<(), RuntimeError> {
+        loop {
+            let ltype = self.evaluate(&stmt.condition)?;
+            if !self.is_truthy(&ltype) {
+                break;
+            }
+            self.execute(&stmt.body)?;
         }
 
         Ok(())
@@ -188,7 +200,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
                     Err(RuntimeError {})
                 }
             },
-            TokenType::Bang => Ok(LiteralTypes::Bool(!self.is_truthy(right))),
+            TokenType::Bang => Ok(LiteralTypes::Bool(!self.is_truthy(&right))),
             _ => unreachable!(),
         }
     }

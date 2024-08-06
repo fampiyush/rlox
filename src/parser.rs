@@ -1,6 +1,6 @@
 use crate::{
     expr::*,
-    stmt::{Block, Expression, If, Print, Stmt, Var},
+    stmt::{Block, Expression, If, Print, Stmt, Var, While},
     token::{
         LiteralTypes, Token,
         TokenType::{self, *},
@@ -80,6 +80,8 @@ impl Parser {
             }));
         } else if self.token_match(&[If]) {
             return self.if_statement();
+        } else if self.token_match(&[While]) {
+            return self.while_statement();
         }
 
         self.expression_statement()
@@ -120,6 +122,18 @@ impl Parser {
             condition: Box::new(condition),
             then_branch: Box::new(then_branch),
             else_branch: else_branch.map(Box::new),
+        }))
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(LeftParen, "Expect '(' after while.")?;
+        let condition = self.expression()?;
+        self.consume(RightParen, "Expect ')' after while condition.")?;
+        let body = self.statement()?;
+
+        Ok(Stmt::While(While {
+            condition: Box::new(condition),
+            body: Box::new(body),
         }))
     }
 
