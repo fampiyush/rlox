@@ -82,6 +82,8 @@ impl Parser {
             return self.if_statement();
         } else if self.token_match(&[While]) {
             return self.while_statement();
+        } else if self.token_match(&[For]) {
+            return self.for_statement();
         }
 
         self.expression_statement()
@@ -135,6 +137,60 @@ impl Parser {
             condition: Box::new(condition),
             body: Box::new(body),
         }))
+    }
+
+    fn for_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(LeftParen, "Expect '(' after 'For'.")?;
+
+        let initializer = if self.token_match(&[Semicolon]) {
+            None
+        } else if self.token_match(&[Var]) {
+            Some(self.var_declaration()?)
+        } else {
+            Some(self.expression_statement()?)
+        };
+
+        let condition = if !self.check(&Semicolon) {
+            self.expression()?
+        } else {
+            Expr::Literal(Literal {
+                value: LiteralTypes::Bool(true),
+            })
+        };
+        self.consume(Semicolon, "Expect ';' after loop condition.")?;
+
+        let increment = if !self.check(&RightParen) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+        self.consume(RightParen, "Expect ')' after for clauses.")?;
+
+        let mut body = self.statement()?;
+
+        if let Some(inc) = increment {
+            body = Stmt::Block(Block {
+                statements: Vec::from([
+                    body,
+                    Stmt::Expression(Expression {
+                        expression: Box::new(inc),
+                    }),
+                ]),
+            });
+        };
+
+        body = Stmt::While(While {
+            condition: Box::new(condition),
+            body: Box::new(body),
+        });
+
+        if let Some(init) = initializer {
+            body = Stmt::Block(Block {
+                statements: Vec::from([init, body]),
+            })
+        };
+
+        Ok(body)
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
