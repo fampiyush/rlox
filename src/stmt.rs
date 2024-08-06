@@ -6,6 +6,7 @@ pub enum Stmt {
     Var(Var),
     Block(Block),
     If(If),
+    While(While),
 }
 
 pub struct Expression {
@@ -31,12 +32,18 @@ pub struct If {
     pub else_branch: Option<Box<Stmt>>,
 }
 
+pub struct While {
+    pub condition: Box<Expr>,
+    pub body: Box<Stmt>,
+}
+
 pub trait Visitor<T> {
     fn visit_expression(&mut self, stmt: &Expression) -> T;
     fn visit_print(&mut self, stmt: &Print) -> T;
     fn visit_var(&mut self, stmt: &Var) -> T;
     fn visit_block(&mut self, stmt: &Block) -> T;
     fn visit_if(&mut self, stmt: &If) -> T;
+    fn visit_while(&mut self, stmt: &While) -> T;
 }
 
 impl Stmt {
@@ -47,6 +54,7 @@ impl Stmt {
             Stmt::Var(var) => visitor.visit_var(var),
             Stmt::Block(block) => visitor.visit_block(block),
             Stmt::If(stmt) => visitor.visit_if(stmt),
+            Stmt::While(stmt) => visitor.visit_while(stmt),
         }
     }
 }
