@@ -1,3 +1,5 @@
+use crate::lox_callable::Callable;
+
 #[derive(Debug, Clone)]
 pub struct Token {
     pub ttype: TokenType,
@@ -12,6 +14,7 @@ pub enum LiteralTypes {
     Number(f64),
     Bool(bool),
     Nil,
+    Callable(Callable),
 }
 
 impl Token {

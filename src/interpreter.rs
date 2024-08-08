@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use crate::environment::Environment;
 use crate::expr::{self, *};
+use crate::lox_callable::{Callable, LoxCallable};
 use crate::report;
 use crate::stmt::{self, *};
 use crate::token::{LiteralTypes, TokenType};
@@ -87,6 +88,7 @@ impl Interpreter {
             }
             LiteralTypes::String(s) => s.to_string(),
             LiteralTypes::Bool(b) => b.to_string(),
+            LiteralTypes::Callable(_) => "".to_string(),
         }
     }
 
@@ -207,6 +209,34 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
 
     fn visit_variable(&mut self, expr: &Variable) -> Result<LiteralTypes, RuntimeError> {
         self.environment.borrow().get(&expr.name)
+    }
+
+    fn visit_call(&mut self, expr: &Call) -> Result<LiteralTypes, RuntimeError> {
+        let callee = self.evaluate(&expr.callee)?;
+
+        let mut arguments = Vec::new();
+        for argument in expr.arguments.iter() {
+            arguments.push(self.evaluate(argument)?);
+        }
+
+        if let LiteralTypes::Callable(Callable::Function(function)) = callee {
+            if arguments.len() != function.arity() {
+                report(
+                    expr.paren.line,
+                    &format!(
+                        "Expected {} arguments but got {}.",
+                        function.arity(),
+                        arguments.len()
+                    ),
+                );
+
+                return Err(RuntimeError {});
+            }
+            function.call(self, &arguments)
+        } else {
+            report(expr.paren.line, "Can only call functions and classes.");
+            Err(RuntimeError {})
+        }
     }
 
     fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, RuntimeError> {
