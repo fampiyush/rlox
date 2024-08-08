@@ -9,6 +9,7 @@ use token::{Token, TokenType};
 mod environment;
 mod expr;
 mod interpreter;
+mod lox_callable;
 mod parser;
 mod scanner;
 mod stmt;
