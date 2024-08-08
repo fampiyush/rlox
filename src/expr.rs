@@ -6,6 +6,7 @@ pub enum Expr {
     Literal(Literal),
     Unary(Unary),
     Variable(Variable),
+    Call(Call),
 }
 
 pub struct Assignment {
@@ -36,6 +37,12 @@ pub struct Variable {
     pub name: Token,
 }
 
+pub struct Call {
+    pub callee: Box<Expr>,
+    pub paren: Token,
+    pub arguments: Vec<Expr>,
+}
+
 pub trait Visitor<T> {
     fn visit_assignment(&mut self, expr: &Assignment) -> T;
     fn visit_binary(&mut self, expr: &Binary) -> T;
@@ -43,6 +50,7 @@ pub trait Visitor<T> {
     fn visit_literal(&self, expr: &Literal) -> T;
     fn visit_unary(&mut self, expr: &Unary) -> T;
     fn visit_variable(&mut self, expr: &Variable) -> T;
+    fn visit_call(&mut self, expr: &Call) -> T;
 }
 
 impl Expr {
@@ -54,6 +62,7 @@ impl Expr {
             Expr::Literal(literal) => visitor.visit_literal(literal),
             Expr::Unary(unary) => visitor.visit_unary(unary),
             Expr::Variable(variable) => visitor.visit_variable(variable),
+            Expr::Call(call) => visitor.visit_call(call),
         }
     }
 }
