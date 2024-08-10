@@ -180,7 +180,7 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
     }
 
     fn visit_function(&mut self, stmt: &Function) -> Result<(), Exit> {
-        let function = LoxFunction::new(stmt.clone());
+        let function = LoxFunction::new(stmt.clone(), Rc::clone(&self.environment));
         self.environment.borrow_mut().define(
             stmt.name.lexeme.clone(),
             LiteralTypes::Callable(Callable::Function(function)),

@@ -5,7 +5,7 @@ use crate::{
     token::LiteralTypes,
 };
 use core::fmt;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 pub enum Callable {
     Function(LoxFunction),
@@ -34,6 +34,7 @@ impl PartialEq for Callable {
 #[derive(Clone)]
 pub struct LoxFunction {
     pub declaration: Box<Function>,
+    pub closure: Rc<RefCell<Environment>>,
 }
 
 pub trait LoxCallable {
@@ -46,9 +47,10 @@ pub trait LoxCallable {
 }
 
 impl LoxFunction {
-    pub fn new(declaration: Function) -> Self {
+    pub fn new(declaration: Function, closure: Rc<RefCell<Environment>>) -> Self {
         LoxFunction {
             declaration: Box::new(declaration),
+            closure,
         }
     }
 }
@@ -59,7 +61,7 @@ impl LoxCallable for LoxFunction {
         interpreter: &mut Interpreter,
         arguments: &[LiteralTypes],
     ) -> Result<LiteralTypes, Exit> {
-        let mut environment = Environment::new_with_enclosing(Rc::clone(&interpreter.globals));
+        let mut environment = Environment::new_with_enclosing(Rc::clone(&self.closure));
         for (param, arg) in self.declaration.params.iter().zip(arguments.iter()) {
             environment.define(param.lexeme.clone(), arg.clone())
         }
