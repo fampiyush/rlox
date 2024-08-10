@@ -8,7 +8,7 @@ use crate::{
     token::{LiteralTypes, Token},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Environment {
     pub values: HashMap<String, LiteralTypes>,
     enclosing: Option<Rc<RefCell<Environment>>>,
@@ -16,10 +16,7 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Self {
-        Environment {
-            values: HashMap::new(),
-            enclosing: None,
-        }
+        Default::default()
     }
 
     pub fn new_with_enclosing(enclosing: Rc<RefCell<Environment>>) -> Self {
