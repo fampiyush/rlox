@@ -4,13 +4,13 @@ use std::rc::Rc;
 
 use crate::report;
 use crate::{
-    interpreter::RuntimeError,
+    interpreter::Exit,
     token::{LiteralTypes, Token},
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Environment {
-    values: HashMap<String, LiteralTypes>,
+    pub values: HashMap<String, LiteralTypes>,
     enclosing: Option<Rc<RefCell<Environment>>>,
 }
 
@@ -33,18 +33,18 @@ impl Environment {
         self.values.insert(name, value);
     }
 
-    pub fn get(&self, name: &Token) -> Result<LiteralTypes, RuntimeError> {
+    pub fn get(&self, name: &Token) -> Result<LiteralTypes, Exit> {
         if self.values.contains_key(&name.lexeme) {
             Ok(self.values.get(&name.lexeme).unwrap().clone())
         } else if self.enclosing.is_some() {
             Ok(self.enclosing.as_ref().unwrap().borrow().get(name)?)
         } else {
             report(name.line, &format!("Undefined variable '{}'.", name.lexeme));
-            Err(RuntimeError {})
+            Err(Exit::RuntimeError {})
         }
     }
 
-    pub fn assign(&mut self, name: &Token, value: LiteralTypes) -> Result<(), RuntimeError> {
+    pub fn assign(&mut self, name: &Token, value: LiteralTypes) -> Result<(), Exit> {
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme.clone(), value);
             Ok(())
@@ -53,7 +53,7 @@ impl Environment {
             Ok(())
         } else {
             report(name.line, &format!("Undefined variable '{}'.", name.lexeme));
-            Err(RuntimeError {})
+            Err(Exit::RuntimeError {})
         }
     }
 }
