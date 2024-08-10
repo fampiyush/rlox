@@ -1,6 +1,6 @@
 use crate::{
     expr::*,
-    stmt::{Block, Expression, If, Print, Stmt, Var, While},
+    stmt::{Block, Expression, Function, If, Print, Return, Stmt, Var, While},
     token::{
         LiteralTypes, Token,
         TokenType::{self, *},
@@ -41,6 +41,8 @@ impl Parser {
     fn declaration(&mut self) -> Result<Stmt, ParserError> {
         let res = if self.token_match(&[Var]) {
             self.var_declaration()
+        } else if self.token_match(&[Fun]) {
+            self.function("function")
         } else {
             self.statement()
         };
@@ -52,6 +54,35 @@ impl Parser {
                 Err(ParserError {})
             }
         }
+    }
+
+    fn function(&mut self, kind: &str) -> Result<Stmt, ParserError> {
+        let name = self.consume(Identifier, &format!("Expect {} name.", kind))?;
+        self.consume(LeftParen, &format!("Expect '(' after {} name.", kind))?;
+
+        let mut parameters = Vec::new();
+
+        if !self.check(&RightParen) {
+            loop {
+                if parameters.len() >= 255 {
+                    self.error(self.peek(), "Can't have more than 255 parameters.");
+                }
+                parameters.push(self.consume(Identifier, "Expect parameter name.")?);
+                if !self.token_match(&[Comma]) {
+                    break;
+                }
+            }
+        }
+        self.consume(RightParen, "Expect ')' after parameters.")?;
+
+        self.consume(LeftBrace, &format!("Expect '{{' before {} body.", kind))?;
+        let body = self.block()?;
+
+        Ok(Stmt::Function(Function {
+            name,
+            params: parameters,
+            body,
+        }))
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParserError> {
@@ -84,6 +115,8 @@ impl Parser {
             return self.while_statement();
         } else if self.token_match(&[For]) {
             return self.for_statement();
+        } else if self.token_match(&[Return]) {
+            return self.return_statement();
         }
 
         self.expression_statement()
@@ -191,6 +224,23 @@ impl Parser {
         };
 
         Ok(body)
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt, ParserError> {
+        let keyword = self.previous();
+
+        let value = if !self.check(&Semicolon) {
+            self.expression()?
+        } else {
+            Expr::Literal(Literal {
+                value: LiteralTypes::Nil,
+            })
+        };
+        self.consume(Semicolon, "Expect ';' after return value.")?;
+        Ok(Stmt::Return(Return {
+            keyword,
+            value: Box::new(value),
+        }))
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
@@ -320,12 +370,15 @@ impl Parser {
     fn finish_call(&mut self, callee: Expr) -> Result<Expr, ParserError> {
         let mut arguments = Vec::new();
 
-        if self.check(&RightParen) {
-            while self.token_match(&[Comma]) {
+        if !self.check(&RightParen) {
+            loop {
                 if arguments.len() >= 255 {
                     self.error(self.peek(), "Can't have more than 255 arguments.");
                 }
                 arguments.push(self.expression()?);
+                if !self.token_match(&[Comma]) {
+                    break;
+                }
             }
         }
 

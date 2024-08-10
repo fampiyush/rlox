@@ -3,46 +3,60 @@ use std::rc::Rc;
 
 use crate::environment::Environment;
 use crate::expr::{self, *};
-use crate::lox_callable::{Callable, LoxCallable};
+use crate::lox_callable::{Callable, LoxCallable, LoxFunction};
 use crate::report;
 use crate::stmt::{self, *};
 use crate::token::{LiteralTypes, TokenType};
 
 pub struct Interpreter {
-    environment: Rc<RefCell<Environment>>,
+    pub globals: Rc<RefCell<Environment>>,
+    pub environment: Rc<RefCell<Environment>>,
 }
 
-pub struct RuntimeError {}
+pub enum Exit {
+    RuntimeError,
+    Return(ReturnExit),
+}
+
+pub struct ReturnExit {
+    pub value: LiteralTypes,
+}
 
 impl Interpreter {
     pub fn new() -> Self {
+        let globals = Rc::new(RefCell::new(Environment::new()));
         Interpreter {
-            environment: Rc::new(RefCell::new(Environment::new())),
+            globals: Rc::clone(&globals),
+            environment: Rc::clone(&globals),
         }
     }
 
-    pub fn interpret(&mut self, statements: &[Stmt]) -> Result<(), RuntimeError> {
+    pub fn interpret(&mut self, statements: &[Stmt]) -> Result<(), Exit> {
         let mut has_error = false;
         for statement in statements.iter() {
             let s = self.execute(statement);
             match &s {
                 Ok(_) => (),
-                Err(_) => has_error = true,
+                Err(e) => {
+                    if let Exit::RuntimeError = e {
+                        has_error = true;
+                    }
+                }
             }
         }
 
         if has_error {
-            Err(RuntimeError {})
+            Err(Exit::RuntimeError {})
         } else {
             Ok(())
         }
     }
 
-    fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
+    fn execute(&mut self, stmt: &Stmt) -> Result<(), Exit> {
         stmt.accept(self)
     }
 
-    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralTypes, RuntimeError> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralTypes, Exit> {
         expr.accept(self)
     }
 
@@ -92,42 +106,34 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(
+    pub fn execute_block(
         &mut self,
         statements: &[Stmt],
         environment: Environment,
-    ) -> Result<(), RuntimeError> {
-        let previous = self.environment.clone();
+    ) -> Result<(), Exit> {
+        let previous = Rc::clone(&self.environment);
         self.environment = Rc::new(RefCell::new(environment));
-        let mut is_error = false;
-        for statement in statements.iter() {
-            let e = self.execute(statement);
-            if e.is_err() {
-                is_error = true
-            }
-        }
+
+        let result = statements.iter().try_for_each(|stat| self.execute(stat));
+
         self.environment = previous;
-        if is_error {
-            Err(RuntimeError {})
-        } else {
-            Ok(())
-        }
+        result
     }
 }
 
-impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
-    fn visit_expression(&mut self, stmt: &Expression) -> Result<(), RuntimeError> {
+impl stmt::Visitor<Result<(), Exit>> for Interpreter {
+    fn visit_expression(&mut self, stmt: &Expression) -> Result<(), Exit> {
         self.evaluate(&stmt.expression)?;
         Ok(())
     }
 
-    fn visit_print(&mut self, stmt: &Print) -> Result<(), RuntimeError> {
+    fn visit_print(&mut self, stmt: &Print) -> Result<(), Exit> {
         let value = self.evaluate(&stmt.expression)?;
         println!("{}", self.stringify(&value));
         Ok(())
     }
 
-    fn visit_var(&mut self, stmt: &Var) -> Result<(), RuntimeError> {
+    fn visit_var(&mut self, stmt: &Var) -> Result<(), Exit> {
         let value = if let Expr::Literal(Literal {
             value: LiteralTypes::Nil,
         }) = *stmt.initializer
@@ -142,7 +148,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
         Ok(())
     }
 
-    fn visit_block(&mut self, stmt: &Block) -> Result<(), RuntimeError> {
+    fn visit_block(&mut self, stmt: &Block) -> Result<(), Exit> {
         self.execute_block(
             &stmt.statements,
             Environment::new_with_enclosing(self.environment.clone()),
@@ -150,7 +156,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
         Ok(())
     }
 
-    fn visit_if(&mut self, stmt: &If) -> Result<(), RuntimeError> {
+    fn visit_if(&mut self, stmt: &If) -> Result<(), Exit> {
         let ltype = self.evaluate(&stmt.condition)?;
         if self.is_truthy(&ltype) {
             self.execute(&stmt.then_branch)?;
@@ -161,7 +167,7 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
         Ok(())
     }
 
-    fn visit_while(&mut self, stmt: &While) -> Result<(), RuntimeError> {
+    fn visit_while(&mut self, stmt: &While) -> Result<(), Exit> {
         loop {
             let ltype = self.evaluate(&stmt.condition)?;
             if !self.is_truthy(&ltype) {
@@ -172,18 +178,32 @@ impl stmt::Visitor<Result<(), RuntimeError>> for Interpreter {
 
         Ok(())
     }
+
+    fn visit_function(&mut self, stmt: &Function) -> Result<(), Exit> {
+        let function = LoxFunction::new(stmt.clone());
+        self.environment.borrow_mut().define(
+            stmt.name.lexeme.clone(),
+            LiteralTypes::Callable(Callable::Function(function)),
+        );
+        Ok(())
+    }
+
+    fn visit_return(&mut self, stmt: &Return) -> Result<(), Exit> {
+        let value = self.evaluate(&stmt.value)?;
+        Err(Exit::Return(ReturnExit { value }))
+    }
 }
 
-impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
-    fn visit_literal(&self, expr: &Literal) -> Result<LiteralTypes, RuntimeError> {
+impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
+    fn visit_literal(&self, expr: &Literal) -> Result<LiteralTypes, Exit> {
         Ok(expr.value.clone())
     }
 
-    fn visit_grouping(&mut self, expr: &Grouping) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_grouping(&mut self, expr: &Grouping) -> Result<LiteralTypes, Exit> {
         self.evaluate(&expr.expr)
     }
 
-    fn visit_assignment(&mut self, expr: &Assignment) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_assignment(&mut self, expr: &Assignment) -> Result<LiteralTypes, Exit> {
         let value = self.evaluate(&expr.value)?;
         self.environment
             .borrow_mut()
@@ -191,7 +211,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
         Ok(value)
     }
 
-    fn visit_unary(&mut self, expr: &Unary) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_unary(&mut self, expr: &Unary) -> Result<LiteralTypes, Exit> {
         let right = self.evaluate(&expr.right)?;
 
         match &expr.operator.ttype {
@@ -199,7 +219,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
                 LiteralTypes::Number(num) => Ok(LiteralTypes::Number(-num)),
                 _ => {
                     report(expr.operator.line, "Operand must be a number.");
-                    Err(RuntimeError {})
+                    Err(Exit::RuntimeError {})
                 }
             },
             TokenType::Bang => Ok(LiteralTypes::Bool(!self.is_truthy(&right))),
@@ -207,13 +227,12 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
         }
     }
 
-    fn visit_variable(&mut self, expr: &Variable) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_variable(&mut self, expr: &Variable) -> Result<LiteralTypes, Exit> {
         self.environment.borrow().get(&expr.name)
     }
 
-    fn visit_call(&mut self, expr: &Call) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_call(&mut self, expr: &Call) -> Result<LiteralTypes, Exit> {
         let callee = self.evaluate(&expr.callee)?;
-
         let mut arguments = Vec::new();
         for argument in expr.arguments.iter() {
             arguments.push(self.evaluate(argument)?);
@@ -230,16 +249,17 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
                     ),
                 );
 
-                return Err(RuntimeError {});
+                return Err(Exit::RuntimeError {});
             }
+
             function.call(self, &arguments)
         } else {
             report(expr.paren.line, "Can only call functions and classes.");
-            Err(RuntimeError {})
+            Err(Exit::RuntimeError {})
         }
     }
 
-    fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, RuntimeError> {
+    fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, Exit> {
         let left = self.evaluate(&expr.left)?;
         let right = self.evaluate(&expr.right)?;
 
@@ -251,7 +271,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
                     Ok(LiteralTypes::Number(left_num - right_num))
                 } else {
                     report(expr.operator.line, "Operands must be numbers.");
-                    Err(RuntimeError {})
+                    Err(Exit::RuntimeError {})
                 }
             }
             TokenType::Slash => {
@@ -261,7 +281,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
                     Ok(LiteralTypes::Number(left_num / right_num))
                 } else {
                     report(expr.operator.line, "Operands must be numbers.");
-                    Err(RuntimeError {})
+                    Err(Exit::RuntimeError {})
                 }
             }
             TokenType::Star => {
@@ -271,7 +291,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
                     Ok(LiteralTypes::Number(left_num * right_num))
                 } else {
                     report(expr.operator.line, "Operands must be numbers.");
-                    Err(RuntimeError {})
+                    Err(Exit::RuntimeError {})
                 }
             }
             TokenType::Plus => match (left, right) {
@@ -286,7 +306,7 @@ impl expr::Visitor<Result<LiteralTypes, RuntimeError>> for Interpreter {
                         expr.operator.line,
                         "Operands must be two numbers or two strings.",
                     );
-                    Err(RuntimeError {})
+                    Err(Exit::RuntimeError {})
                 }
             },
             TokenType::Greater => Ok(LiteralTypes::Bool(match (left, right) {
