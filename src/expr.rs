@@ -1,4 +1,6 @@
 use crate::token::{LiteralTypes, Token};
+
+#[derive(Debug, Clone)]
 pub enum Expr {
     Assignment(Assignment),
     Binary(Binary),
@@ -9,34 +11,41 @@ pub enum Expr {
     Call(Call),
 }
 
+#[derive(Debug, Clone)]
 pub struct Assignment {
     pub name: Token,
     pub value: Box<Expr>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Binary {
     pub left: Box<Expr>,
     pub operator: Token,
     pub right: Box<Expr>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Grouping {
     pub expr: Box<Expr>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Literal {
     pub value: LiteralTypes,
 }
 
+#[derive(Debug, Clone)]
 pub struct Unary {
     pub operator: Token,
     pub right: Box<Expr>,
 }
 
+#[derive(Debug, Clone)]
 pub struct Variable {
     pub name: Token,
 }
 
+#[derive(Debug, Clone)]
 pub struct Call {
     pub callee: Box<Expr>,
     pub paren: Token,
