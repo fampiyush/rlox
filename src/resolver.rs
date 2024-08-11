@@ -13,7 +13,7 @@ pub struct Resolver<'a> {
     current_function: FunctionType,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum FunctionType {
     None,
     Function,
@@ -144,6 +144,10 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
     }
 
     fn visit_return(&mut self, stmt: &Return) -> Result<(), ParserError> {
+        if self.current_function == FunctionType::None {
+            crate::error(stmt.keyword.clone(), "Can't return from top-level code.");
+            return Err(ParserError {});
+        }
         self.resolve_expr(&stmt.value);
         Ok(())
     }
