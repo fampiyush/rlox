@@ -77,11 +77,16 @@ fn run(content: &str) {
         Ok(e) => {
             let mut interpreter = Interpreter::new();
             let mut resolver = Resolver::new(&mut interpreter);
-            let _ = resolver.resolve_each(e);
-            let interpreted = interpreter.interpret(e);
+            let r = resolver.resolve_each(e);
+            match &r {
+                Ok(_) => {
+                    let interpreted = interpreter.interpret(e);
 
-            match &interpreted {
-                Ok(_) => (),
+                    match &interpreted {
+                        Ok(_) => (),
+                        Err(_) => process::exit(70),
+                    }
+                }
                 Err(_) => process::exit(70),
             }
         }
