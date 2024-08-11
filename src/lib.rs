@@ -3,6 +3,7 @@ use std::io::Write;
 
 use interpreter::Interpreter;
 use parser::Parser;
+use resolver::Resolver;
 use scanner::Scanner;
 use token::{Token, TokenType};
 
@@ -11,6 +12,7 @@ mod expr;
 mod interpreter;
 mod lox_callable;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 mod token;
@@ -74,6 +76,8 @@ fn run(content: &str) {
     match &statements {
         Ok(e) => {
             let mut interpreter = Interpreter::new();
+            let mut resolver = Resolver::new(&mut interpreter);
+            let _ = resolver.resolve_each(e);
             let interpreted = interpreter.interpret(e);
 
             match &interpreted {
