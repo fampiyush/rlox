@@ -7,6 +7,15 @@ use crate::{
     },
 };
 
+static mut UUID: usize = 0;
+
+pub fn uuid_next() -> usize {
+    unsafe {
+        UUID += 1;
+        UUID
+    }
+}
+
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
@@ -89,6 +98,7 @@ impl Parser {
         let name = self.consume(Identifier, "Expect variable name.")?;
 
         let mut initializer = Expr::Literal(Literal {
+            uuid: uuid_next(),
             value: LiteralTypes::Nil,
         });
         if self.token_match(&[Equal]) {
@@ -187,6 +197,7 @@ impl Parser {
             self.expression()?
         } else {
             Expr::Literal(Literal {
+                uuid: uuid_next(),
                 value: LiteralTypes::Bool(true),
             })
         };
@@ -233,6 +244,7 @@ impl Parser {
             self.expression()?
         } else {
             Expr::Literal(Literal {
+                uuid: uuid_next(),
                 value: LiteralTypes::Nil,
             })
         };
@@ -262,9 +274,10 @@ impl Parser {
             let equals = self.previous();
             let value = self.assignment()?;
 
-            if let Expr::Variable(Variable { name }) = expr {
+            if let Expr::Variable(v) = expr {
                 return Ok(Expr::Assignment(Assignment {
-                    name,
+                    uuid: uuid_next(),
+                    name: v.name,
                     value: Box::new(value),
                 }));
             } else {
@@ -283,6 +296,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.comparison()?;
             expr = Ok(Expr::Binary(Binary {
+                uuid: uuid_next(),
                 left: Box::new(expr?),
                 operator,
                 right: Box::new(right),
@@ -299,6 +313,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.term()?;
             expr = Ok(Expr::Binary(Binary {
+                uuid: uuid_next(),
                 left: Box::new(expr?),
                 operator,
                 right: Box::new(right),
@@ -315,6 +330,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.factor()?;
             expr = Ok(Expr::Binary(Binary {
+                uuid: uuid_next(),
                 left: Box::new(expr?),
                 operator,
                 right: Box::new(right),
@@ -331,6 +347,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.unary()?;
             expr = Ok(Expr::Binary(Binary {
+                uuid: uuid_next(),
                 left: Box::new(expr?),
                 operator,
                 right: Box::new(right),
@@ -345,6 +362,7 @@ impl Parser {
             let operator = self.previous();
             let right = self.unary()?;
             return Ok(Expr::Unary(Unary {
+                uuid: uuid_next(),
                 operator,
                 right: Box::new(right),
             }));
@@ -385,6 +403,7 @@ impl Parser {
         let paren = self.consume(RightParen, "Expect ')' after arguments.")?;
 
         Ok(Expr::Call(Call {
+            uuid: uuid_next(),
             callee: Box::new(callee),
             paren,
             arguments,
@@ -396,30 +415,35 @@ impl Parser {
             False => {
                 self.advance();
                 Ok(Expr::Literal(Literal {
+                    uuid: uuid_next(),
                     value: LiteralTypes::Bool(false),
                 }))
             }
             True => {
                 self.advance();
                 Ok(Expr::Literal(Literal {
+                    uuid: uuid_next(),
                     value: LiteralTypes::Bool(true),
                 }))
             }
             Nil => {
                 self.advance();
                 Ok(Expr::Literal(Literal {
+                    uuid: uuid_next(),
                     value: LiteralTypes::Nil,
                 }))
             }
             Number | String => {
                 self.advance();
                 Ok(Expr::Literal(Literal {
+                    uuid: uuid_next(),
                     value: self.previous().literal,
                 }))
             }
             Identifier => {
                 self.advance();
                 Ok(Expr::Variable(Variable {
+                    uuid: uuid_next(),
                     name: self.previous(),
                 }))
             }
@@ -428,6 +452,7 @@ impl Parser {
                 let expr = self.expression()?;
                 self.consume(RightParen, "Expect ')' after expression.")?;
                 Ok(Expr::Grouping(Grouping {
+                    uuid: uuid_next(),
                     expr: Box::new(expr),
                 }))
             }
