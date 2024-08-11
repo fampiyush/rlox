@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::environment::Environment;
@@ -6,11 +7,12 @@ use crate::expr::{self, *};
 use crate::lox_callable::{Callable, LoxCallable, LoxFunction};
 use crate::report;
 use crate::stmt::{self, *};
-use crate::token::{LiteralTypes, TokenType};
+use crate::token::{LiteralTypes, Token, TokenType};
 
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     pub environment: Rc<RefCell<Environment>>,
+    locals: HashMap<Expr, usize>,
 }
 
 pub enum Exit {
@@ -28,6 +30,7 @@ impl Interpreter {
         Interpreter {
             globals: Rc::clone(&globals),
             environment: Rc::clone(&globals),
+            locals: HashMap::new(),
         }
     }
 
@@ -54,6 +57,10 @@ impl Interpreter {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<(), Exit> {
         stmt.accept(self)
+    }
+
+    pub fn resolve(&mut self, expr: &Expr, depth: usize) {
+        self.locals.insert(expr.clone(), depth);
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<LiteralTypes, Exit> {
@@ -119,6 +126,15 @@ impl Interpreter {
         self.environment = previous;
         result
     }
+
+    fn look_up_variable(&self, name: Token, expr: Expr) -> Result<LiteralTypes, Exit> {
+        let distance = self.locals.get(&expr);
+        if let Some(d) = distance {
+            self.environment.borrow_mut().get_at(*d, name)
+        } else {
+            self.globals.borrow().get(&name)
+        }
+    }
 }
 
 impl stmt::Visitor<Result<(), Exit>> for Interpreter {
@@ -135,6 +151,7 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
 
     fn visit_var(&mut self, stmt: &Var) -> Result<(), Exit> {
         let value = if let Expr::Literal(Literal {
+            uuid: _usize,
             value: LiteralTypes::Nil,
         }) = *stmt.initializer
         {
@@ -205,9 +222,17 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
 
     fn visit_assignment(&mut self, expr: &Assignment) -> Result<LiteralTypes, Exit> {
         let value = self.evaluate(&expr.value)?;
-        self.environment
-            .borrow_mut()
-            .assign(&expr.name, value.clone())?;
+        let distance = self.locals.get(&Expr::Assignment(expr.clone()));
+
+        if let Some(d) = distance {
+            self.environment
+                .borrow_mut()
+                .assign_at(*d, expr.name.clone(), value.clone());
+        } else {
+            self.globals
+                .borrow_mut()
+                .assign(&expr.name, value.clone())?;
+        }
         Ok(value)
     }
 
@@ -228,7 +253,8 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
     }
 
     fn visit_variable(&mut self, expr: &Variable) -> Result<LiteralTypes, Exit> {
-        self.environment.borrow().get(&expr.name)
+        // self.environment.borrow().get(&expr.name)
+        self.look_up_variable(expr.name.clone(), Expr::Variable(expr.clone()))
     }
 
     fn visit_call(&mut self, expr: &Call) -> Result<LiteralTypes, Exit> {

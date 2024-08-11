@@ -53,4 +53,28 @@ impl Environment {
             Err(Exit::RuntimeError {})
         }
     }
+
+    pub fn get_at(&self, distance: usize, name: Token) -> Result<LiteralTypes, Exit> {
+        if distance == 0 {
+            self.get(&name)
+        } else {
+            self.enclosing
+                .as_ref()
+                .unwrap()
+                .borrow()
+                .get_at(distance - 1, name)
+        }
+    }
+
+    pub fn assign_at(&mut self, distance: usize, name: Token, value: LiteralTypes) {
+        if distance == 0 {
+            self.define(name.lexeme, value);
+        } else {
+            self.enclosing
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .assign_at(distance - 1, name, value);
+        }
+    }
 }
