@@ -157,6 +157,12 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
         self.resolve_stmt(&stmt.body)?;
         Ok(())
     }
+
+    fn visit_class(&mut self, stmt: &Class) -> Result<(), ParserError> {
+        self.declare(stmt.name)?;
+        self.define(stmt.name);
+        Ok(())
+    }
 }
 
 impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
