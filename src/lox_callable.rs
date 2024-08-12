@@ -4,12 +4,13 @@ use crate::{
     stmt::Function,
     token::LiteralTypes,
 };
-use core::fmt;
+use std::fmt;
 use std::{cell::RefCell, rc::Rc};
 
 pub enum Callable {
     Function(LoxFunction),
     Class(LoxClass),
+    Instance(LoxInstance),
 }
 
 impl fmt::Debug for Callable {
@@ -23,6 +24,7 @@ impl Clone for Callable {
         match self {
             Callable::Function(lox_function) => Callable::Function(lox_function.clone()),
             Callable::Class(class) => Callable::Class(class.clone()),
+            Callable::Instance(ins) => Callable::Instance(ins.clone()),
         }
     }
 }
@@ -42,6 +44,11 @@ pub struct LoxFunction {
 #[derive(Clone)]
 pub struct LoxClass {
     name: String,
+}
+
+#[derive(Clone)]
+pub struct LoxInstance {
+    class: LoxClass,
 }
 
 pub trait LoxCallable {
@@ -102,5 +109,32 @@ impl fmt::Display for LoxFunction {
 impl LoxClass {
     pub fn new(name: String) -> Self {
         LoxClass { name }
+    }
+}
+
+impl LoxCallable for LoxClass {
+    fn call(
+        &self,
+        interpreter: &mut Interpreter,
+        arguments: &[LiteralTypes],
+    ) -> Result<LiteralTypes, Exit> {
+        let instance = LoxInstance::new(self.clone());
+        Ok(LiteralTypes::Callable(Callable::Instance(instance)))
+    }
+
+    fn arity(&self) -> usize {
+        0
+    }
+}
+
+impl LoxInstance {
+    pub fn new(class: LoxClass) -> Self {
+        LoxInstance { class }
+    }
+}
+
+impl fmt::Display for LoxInstance {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} instance", self.class.name)
     }
 }

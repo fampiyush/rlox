@@ -109,7 +109,11 @@ impl Interpreter {
             }
             LiteralTypes::String(s) => s.to_string(),
             LiteralTypes::Bool(b) => b.to_string(),
-            LiteralTypes::Callable(_) => "".to_string(),
+            LiteralTypes::Callable(c) => match c {
+                Callable::Instance(ins) => ins.to_string(),
+                Callable::Function(func) => func.to_string(),
+                _ => "callable".to_string(),
+            },
         }
     }
 
@@ -290,6 +294,21 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
             }
 
             function.call(self, &arguments)
+        } else if let LiteralTypes::Callable(Callable::Class(class)) = callee {
+            if arguments.len() != class.arity() {
+                report(
+                    expr.paren.line,
+                    &format!(
+                        "Expected {} arguments but got {}.",
+                        class.arity(),
+                        arguments.len()
+                    ),
+                );
+
+                return Err(Exit::RuntimeError {});
+            }
+
+            class.call(self, &arguments)
         } else {
             report(expr.paren.line, "Can only call functions and classes.");
             Err(Exit::RuntimeError {})
