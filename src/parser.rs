@@ -393,6 +393,13 @@ impl Parser {
         loop {
             if self.token_match(&[LeftParen]) {
                 expr = self.finish_call(expr)?;
+            } else if self.token_match(&[Dot]) {
+                let name = self.consume(Identifier, "Expect property name after '.'")?;
+                expr = Expr::Get(Get {
+                    uuid: uuid_next(),
+                    object: Box::new(expr),
+                    name,
+                });
             } else {
                 break;
             }

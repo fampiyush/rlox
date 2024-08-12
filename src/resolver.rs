@@ -214,4 +214,9 @@ impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
         self.resolve_expr(&expr.right);
         Ok(())
     }
+
+    fn visit_get(&mut self, expr: &Get) -> Result<(), ParserError> {
+        self.resolve_expr(&expr.object);
+        Ok(())
+    }
 }

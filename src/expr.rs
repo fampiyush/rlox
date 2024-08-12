@@ -10,6 +10,7 @@ pub enum Expr {
     Unary(Unary),
     Variable(Variable),
     Call(Call),
+    Get(Get),
 }
 
 #[derive(Debug, Clone)]
@@ -60,6 +61,13 @@ pub struct Call {
     pub arguments: Vec<Expr>,
 }
 
+#[derive(Debug, Clone)]
+pub struct Get {
+    pub uuid: usize,
+    pub object: Box<Expr>,
+    pub name: Token,
+}
+
 pub trait Visitor<T> {
     fn visit_assignment(&mut self, expr: &Assignment) -> T;
     fn visit_binary(&mut self, expr: &Binary) -> T;
@@ -68,6 +76,7 @@ pub trait Visitor<T> {
     fn visit_unary(&mut self, expr: &Unary) -> T;
     fn visit_variable(&mut self, expr: &Variable) -> T;
     fn visit_call(&mut self, expr: &Call) -> T;
+    fn visit_get(&mut self, expr: &Get) -> T;
 }
 
 impl Expr {
@@ -80,6 +89,7 @@ impl Expr {
             Expr::Unary(unary) => visitor.visit_unary(unary),
             Expr::Variable(variable) => visitor.visit_variable(variable),
             Expr::Call(call) => visitor.visit_call(call),
+            Expr::Get(get) => visitor.visit_get(get),
         }
     }
 
@@ -92,6 +102,7 @@ impl Expr {
             Expr::Unary(e) => e.uuid,
             Expr::Variable(e) => e.uuid,
             Expr::Call(e) => e.uuid,
+            Expr::Get(e) => e.uuid,
         }
     }
 }

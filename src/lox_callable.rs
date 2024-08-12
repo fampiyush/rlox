@@ -1,11 +1,12 @@
 use crate::{
     environment::Environment,
     interpreter::{Exit, Interpreter},
+    report,
     stmt::Function,
-    token::LiteralTypes,
+    token::{LiteralTypes, Token},
 };
-use std::fmt;
 use std::{cell::RefCell, rc::Rc};
+use std::{collections::HashMap, fmt};
 
 pub enum Callable {
     Function(LoxFunction),
@@ -49,6 +50,7 @@ pub struct LoxClass {
 #[derive(Clone)]
 pub struct LoxInstance {
     class: LoxClass,
+    fields: HashMap<String, LiteralTypes>,
 }
 
 pub trait LoxCallable {
@@ -129,7 +131,19 @@ impl LoxCallable for LoxClass {
 
 impl LoxInstance {
     pub fn new(class: LoxClass) -> Self {
-        LoxInstance { class }
+        LoxInstance {
+            class,
+            fields: HashMap::new(),
+        }
+    }
+
+    pub fn get(&mut self, name: &Token) -> Result<LiteralTypes, Exit> {
+        if self.fields.contains_key(&name.lexeme) {
+            Ok(self.fields.get(&name.lexeme).unwrap().clone())
+        } else {
+            report(name.line, &format!("Undefined property {}.", name.lexeme));
+            Err(Exit::RuntimeError)
+        }
     }
 }
 
