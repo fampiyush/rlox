@@ -9,6 +9,7 @@ use std::{cell::RefCell, rc::Rc};
 
 pub enum Callable {
     Function(LoxFunction),
+    Class(LoxClass),
 }
 
 impl fmt::Debug for Callable {
@@ -21,6 +22,7 @@ impl Clone for Callable {
     fn clone(&self) -> Self {
         match self {
             Callable::Function(lox_function) => Callable::Function(lox_function.clone()),
+            Callable::Class(class) => Callable::Class(class.clone()),
         }
     }
 }
@@ -35,6 +37,11 @@ impl PartialEq for Callable {
 pub struct LoxFunction {
     pub declaration: Box<Function>,
     pub closure: Rc<RefCell<Environment>>,
+}
+
+#[derive(Clone)]
+pub struct LoxClass {
+    name: String,
 }
 
 pub trait LoxCallable {
@@ -83,5 +90,11 @@ impl LoxCallable for LoxFunction {
 
     fn arity(&self) -> usize {
         self.declaration.params.len()
+    }
+}
+
+impl LoxClass {
+    pub fn new(name: String) -> Self {
+        LoxClass { name }
     }
 }

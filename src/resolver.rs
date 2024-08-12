@@ -159,8 +159,8 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
     }
 
     fn visit_class(&mut self, stmt: &Class) -> Result<(), ParserError> {
-        self.declare(stmt.name)?;
-        self.define(stmt.name);
+        self.declare(stmt.name.clone())?;
+        self.define(stmt.name.clone());
         Ok(())
     }
 }

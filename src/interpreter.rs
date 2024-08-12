@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use crate::environment::Environment;
 use crate::expr::{self, *};
-use crate::lox_callable::{Callable, LoxCallable, LoxFunction};
+use crate::lox_callable::{Callable, LoxCallable, LoxClass, LoxFunction};
 use crate::report;
 use crate::stmt::{self, *};
 use crate::token::{LiteralTypes, Token, TokenType};
@@ -208,6 +208,17 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
     fn visit_return(&mut self, stmt: &Return) -> Result<(), Exit> {
         let value = self.evaluate(&stmt.value)?;
         Err(Exit::Return(ReturnExit { value }))
+    }
+
+    fn visit_class(&mut self, stmt: &Class) -> Result<(), Exit> {
+        self.environment
+            .borrow_mut()
+            .define(stmt.name.lexeme.clone(), LiteralTypes::Nil);
+        let class = LoxClass::new(stmt.name.lexeme.clone());
+        self.environment
+            .borrow_mut()
+            .assign(&stmt.name, LiteralTypes::Callable(Callable::Class(class)))?;
+        Ok(())
     }
 }
 
