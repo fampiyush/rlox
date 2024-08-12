@@ -93,6 +93,12 @@ impl LoxCallable for LoxFunction {
     }
 }
 
+impl fmt::Display for LoxFunction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} function", self.declaration.name.lexeme)
+    }
+}
+
 impl LoxClass {
     pub fn new(name: String) -> Self {
         LoxClass { name }
