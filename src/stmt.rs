@@ -10,6 +10,7 @@ pub enum Stmt {
     While(While),
     Function(Function),
     Return(Return),
+    Class(Class),
 }
 
 #[derive(Clone)]
@@ -59,6 +60,12 @@ pub struct Return {
     pub value: Box<Expr>,
 }
 
+#[derive(Clone)]
+pub struct Class {
+    pub name: Token,
+    pub methods: Vec<Stmt>,
+}
+
 pub trait Visitor<T> {
     fn visit_expression(&mut self, stmt: &Expression) -> T;
     fn visit_print(&mut self, stmt: &Print) -> T;
@@ -68,6 +75,7 @@ pub trait Visitor<T> {
     fn visit_while(&mut self, stmt: &While) -> T;
     fn visit_function(&mut self, stmt: &Function) -> T;
     fn visit_return(&mut self, stmt: &Return) -> T;
+    fn visit_class(&mut self, stmt: &Class) -> T;
 }
 
 impl Stmt {
@@ -81,6 +89,7 @@ impl Stmt {
             Stmt::While(stmt) => visitor.visit_while(stmt),
             Stmt::Function(fun) => visitor.visit_function(fun),
             Stmt::Return(r) => visitor.visit_return(r),
+            Stmt::Class(class) => visitor.visit_class(class),
         }
     }
 }

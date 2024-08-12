@@ -1,6 +1,6 @@
 use crate::{
     expr::*,
-    stmt::{Block, Expression, Function, If, Print, Return, Stmt, Var, While},
+    stmt::{Block, Class, Expression, Function, If, Print, Return, Stmt, Var, While},
     token::{
         LiteralTypes, Token,
         TokenType::{self, *},
@@ -52,6 +52,8 @@ impl Parser {
             self.var_declaration()
         } else if self.token_match(&[Fun]) {
             self.function("function")
+        } else if self.token_match(&[Class]) {
+            self.class_declaration()
         } else {
             self.statement()
         };
@@ -92,6 +94,20 @@ impl Parser {
             params: parameters,
             body,
         }))
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt, ParserError> {
+        let name = self.consume(Identifier, "Expect class name.")?;
+        self.consume(LeftBrace, "Expect '{' before class body.")?;
+
+        let mut methods = Vec::new();
+        while !self.check(&RightBrace) && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+
+        self.consume(RightBrace, "Expect '}' after class body.")?;
+
+        Ok(Stmt::Class(Class { name, methods }))
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParserError> {
