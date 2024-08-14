@@ -17,6 +17,7 @@ pub struct Resolver<'a> {
 enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 impl<'a> Resolver<'a> {
@@ -161,6 +162,13 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
     fn visit_class(&mut self, stmt: &Class) -> Result<(), ParserError> {
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
+
+        for method in stmt.methods.iter() {
+            if let Stmt::Function(m) = method {
+                self.resolve_function(m, FunctionType::Method)?;
+            }
+        }
+
         Ok(())
     }
 }

@@ -45,6 +45,7 @@ pub struct LoxFunction {
 #[derive(Clone)]
 pub struct LoxClass {
     name: String,
+    methods: HashMap<String, LoxFunction>,
 }
 
 #[derive(Clone)]
@@ -109,8 +110,12 @@ impl fmt::Display for LoxFunction {
 }
 
 impl LoxClass {
-    pub fn new(name: String) -> Self {
-        LoxClass { name }
+    pub fn new(name: String, methods: HashMap<String, LoxFunction>) -> Self {
+        LoxClass { name, methods }
+    }
+
+    pub fn find_method(&self, name: &str) -> Option<&LoxFunction> {
+        self.methods.get(name)
     }
 }
 
@@ -140,6 +145,8 @@ impl LoxInstance {
     pub fn get(&mut self, name: &Token) -> Result<LiteralTypes, Exit> {
         if self.fields.contains_key(&name.lexeme) {
             Ok(self.fields.get(&name.lexeme).unwrap().clone())
+        } else if let Some(method) = self.class.find_method(&name.lexeme) {
+            Ok(LiteralTypes::Callable(Callable::Function(method.clone())))
         } else {
             report(name.line, &format!("Undefined property {}.", name.lexeme));
             Err(Exit::RuntimeError)

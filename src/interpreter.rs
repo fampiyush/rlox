@@ -218,7 +218,16 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme.clone(), LiteralTypes::Nil);
-        let class = LoxClass::new(stmt.name.lexeme.clone());
+
+        let mut methods = HashMap::new();
+        for method in stmt.methods.iter() {
+            if let Stmt::Function(m) = method {
+                let function = LoxFunction::new(m.clone(), Rc::clone(&self.environment));
+                methods.insert(m.name.lexeme.clone(), function);
+            }
+        }
+
+        let class = LoxClass::new(stmt.name.lexeme.clone(), methods);
         self.environment
             .borrow_mut()
             .assign(&stmt.name, LiteralTypes::Callable(Callable::Class(class)))?;
