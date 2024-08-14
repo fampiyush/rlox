@@ -296,6 +296,13 @@ impl Parser {
                     name: v.name,
                     value: Box::new(value),
                 }));
+            } else if let Expr::Get(g) = expr {
+                return Ok(Expr::Set(Set {
+                    uuid: uuid_next(),
+                    object: g.object,
+                    name: g.name,
+                    value: Box::new(value),
+                }));
             } else {
                 self.error(&equals, "Invalid assignment target.");
                 return Err(ParserError {});

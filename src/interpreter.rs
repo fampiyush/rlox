@@ -326,6 +326,19 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
         }
     }
 
+    fn visit_set(&mut self, expr: &Set) -> Result<LiteralTypes, Exit> {
+        let object = self.evaluate(&expr.object)?;
+
+        if let LiteralTypes::Callable(Callable::Instance(mut ins)) = object {
+            let value = self.evaluate(&expr.value)?;
+            ins.set(&expr.name, &value);
+            Ok(value)
+        } else {
+            report(expr.name.line, "Only instances have fields.");
+            Err(Exit::RuntimeError)
+        }
+    }
+
     fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, Exit> {
         let left = self.evaluate(&expr.left)?;
         let right = self.evaluate(&expr.right)?;

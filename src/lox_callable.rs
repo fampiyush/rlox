@@ -145,6 +145,10 @@ impl LoxInstance {
             Err(Exit::RuntimeError)
         }
     }
+
+    pub fn set(&mut self, name: &Token, value: &LiteralTypes) {
+        self.fields.insert(name.lexeme.clone(), value.clone());
+    }
 }
 
 impl fmt::Display for LoxInstance {

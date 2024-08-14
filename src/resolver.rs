@@ -219,4 +219,10 @@ impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
         self.resolve_expr(&expr.object);
         Ok(())
     }
+
+    fn visit_set(&mut self, expr: &Set) -> Result<(), ParserError> {
+        self.resolve_expr(&expr.value);
+        self.resolve_expr(&expr.object);
+        Ok(())
+    }
 }

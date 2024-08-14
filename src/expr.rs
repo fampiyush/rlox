@@ -11,6 +11,7 @@ pub enum Expr {
     Variable(Variable),
     Call(Call),
     Get(Get),
+    Set(Set),
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +69,14 @@ pub struct Get {
     pub name: Token,
 }
 
+#[derive(Debug, Clone)]
+pub struct Set {
+    pub uuid: usize,
+    pub object: Box<Expr>,
+    pub name: Token,
+    pub value: Box<Expr>,
+}
+
 pub trait Visitor<T> {
     fn visit_assignment(&mut self, expr: &Assignment) -> T;
     fn visit_binary(&mut self, expr: &Binary) -> T;
@@ -77,6 +86,7 @@ pub trait Visitor<T> {
     fn visit_variable(&mut self, expr: &Variable) -> T;
     fn visit_call(&mut self, expr: &Call) -> T;
     fn visit_get(&mut self, expr: &Get) -> T;
+    fn visit_set(&mut self, expr: &Set) -> T;
 }
 
 impl Expr {
@@ -90,6 +100,7 @@ impl Expr {
             Expr::Variable(variable) => visitor.visit_variable(variable),
             Expr::Call(call) => visitor.visit_call(call),
             Expr::Get(get) => visitor.visit_get(get),
+            Expr::Set(set) => visitor.visit_set(set),
         }
     }
 
@@ -103,6 +114,7 @@ impl Expr {
             Expr::Variable(e) => e.uuid,
             Expr::Call(e) => e.uuid,
             Expr::Get(e) => e.uuid,
+            Expr::Set(e) => e.uuid,
         }
     }
 }
