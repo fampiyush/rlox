@@ -11,7 +11,7 @@ use std::{collections::HashMap, fmt};
 pub enum Callable {
     Function(LoxFunction),
     Class(LoxClass),
-    Instance(LoxInstance),
+    Instance(Rc<RefCell<LoxInstance>>),
 }
 
 impl fmt::Debug for Callable {
@@ -44,14 +44,14 @@ pub struct LoxFunction {
 
 #[derive(Clone)]
 pub struct LoxClass {
-    name: String,
-    methods: HashMap<String, LoxFunction>,
+    pub name: String,
+    pub methods: HashMap<String, LoxFunction>,
 }
 
 #[derive(Clone)]
 pub struct LoxInstance {
-    class: LoxClass,
-    fields: HashMap<String, LiteralTypes>,
+    pub class: Rc<LoxClass>,
+    pub fields: HashMap<String, LiteralTypes>,
 }
 
 pub trait LoxCallable {
@@ -68,6 +68,20 @@ impl LoxFunction {
         LoxFunction {
             declaration: Box::new(declaration),
             closure,
+        }
+    }
+
+    pub fn bind(&self, instance: Rc<RefCell<LoxInstance>>) -> LoxFunction {
+        let environment = Rc::new(RefCell::new(Environment::new_with_enclosing(Rc::clone(
+            &self.closure,
+        ))));
+        environment.borrow_mut().define(
+            "this".to_string(),
+            LiteralTypes::Callable(Callable::Instance(instance)),
+        );
+        LoxFunction {
+            declaration: self.declaration.clone(),
+            closure: environment,
         }
     }
 }
@@ -125,8 +139,10 @@ impl LoxCallable for LoxClass {
         interpreter: &mut Interpreter,
         arguments: &[LiteralTypes],
     ) -> Result<LiteralTypes, Exit> {
-        let instance = LoxInstance::new(self.clone());
-        Ok(LiteralTypes::Callable(Callable::Instance(instance)))
+        let instance = LoxInstance::new(Rc::new(self.clone()));
+        Ok(LiteralTypes::Callable(Callable::Instance(Rc::new(
+            RefCell::new(instance),
+        ))))
     }
 
     fn arity(&self) -> usize {
@@ -135,7 +151,7 @@ impl LoxCallable for LoxClass {
 }
 
 impl LoxInstance {
-    pub fn new(class: LoxClass) -> Self {
+    pub fn new(class: Rc<LoxClass>) -> Self {
         LoxInstance {
             class,
             fields: HashMap::new(),
@@ -146,7 +162,9 @@ impl LoxInstance {
         if self.fields.contains_key(&name.lexeme) {
             Ok(self.fields.get(&name.lexeme).unwrap().clone())
         } else if let Some(method) = self.class.find_method(&name.lexeme) {
-            Ok(LiteralTypes::Callable(Callable::Function(method.clone())))
+            Ok(LiteralTypes::Callable(Callable::Function(
+                method.bind(Rc::new(RefCell::new(self.to_owned()))),
+            )))
         } else {
             report(name.line, &format!("Undefined property {}.", name.lexeme));
             Err(Exit::RuntimeError)

@@ -163,11 +163,19 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
 
+        self.begin_scope();
+        self.scopes
+            .last_mut()
+            .unwrap()
+            .insert("this".to_string(), true);
+
         for method in stmt.methods.iter() {
             if let Stmt::Function(m) = method {
                 self.resolve_function(m, FunctionType::Method)?;
             }
         }
+
+        self.end_scope();
 
         Ok(())
     }
@@ -231,6 +239,11 @@ impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
     fn visit_set(&mut self, expr: &Set) -> Result<(), ParserError> {
         self.resolve_expr(&expr.value);
         self.resolve_expr(&expr.object);
+        Ok(())
+    }
+
+    fn visit_this(&mut self, expr: &This) -> Result<(), ParserError> {
+        self.resolve_local(&Expr::This(expr.clone()), expr.keyword.clone());
         Ok(())
     }
 }

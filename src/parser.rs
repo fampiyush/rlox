@@ -470,6 +470,13 @@ impl Parser {
                     value: self.previous().literal,
                 }))
             }
+            TokenType::This => {
+                self.advance();
+                Ok(Expr::This(crate::expr::This {
+                    uuid: uuid_next(),
+                    keyword: self.previous(),
+                }))
+            }
             Identifier => {
                 self.advance();
                 Ok(Expr::Variable(Variable {

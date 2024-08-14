@@ -110,7 +110,7 @@ impl Interpreter {
             LiteralTypes::String(s) => s.to_string(),
             LiteralTypes::Bool(b) => b.to_string(),
             LiteralTypes::Callable(c) => match c {
-                Callable::Instance(ins) => ins.to_string(),
+                Callable::Instance(ins) => ins.borrow().to_string(),
                 Callable::Function(func) => func.to_string(),
                 _ => "callable".to_string(),
             },
@@ -247,7 +247,6 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
     fn visit_assignment(&mut self, expr: &Assignment) -> Result<LiteralTypes, Exit> {
         let value = self.evaluate(&expr.value)?;
         let distance = self.locals.get(&Expr::Assignment(expr.clone()));
-
         if let Some(d) = distance {
             self.environment
                 .borrow_mut()
@@ -326,9 +325,8 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
 
     fn visit_get(&mut self, expr: &Get) -> Result<LiteralTypes, Exit> {
         let object = self.evaluate(&expr.object)?;
-
-        if let LiteralTypes::Callable(Callable::Instance(mut ins)) = object {
-            ins.get(&expr.name)
+        if let LiteralTypes::Callable(Callable::Instance(ins)) = object {
+            ins.borrow_mut().get(&expr.name)
         } else {
             report(expr.name.line, "Only instances have properties.");
             Err(Exit::RuntimeError)
@@ -337,15 +335,18 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
 
     fn visit_set(&mut self, expr: &Set) -> Result<LiteralTypes, Exit> {
         let object = self.evaluate(&expr.object)?;
-
-        if let LiteralTypes::Callable(Callable::Instance(mut ins)) = object {
+        if let LiteralTypes::Callable(Callable::Instance(ins)) = object {
             let value = self.evaluate(&expr.value)?;
-            ins.set(&expr.name, &value);
+            ins.borrow_mut().set(&expr.name, &value);
             Ok(value)
         } else {
             report(expr.name.line, "Only instances have fields.");
             Err(Exit::RuntimeError)
         }
+    }
+
+    fn visit_this(&mut self, expr: &This) -> Result<LiteralTypes, Exit> {
+        self.look_up_variable(expr.keyword.clone(), Expr::This(expr.clone()))
     }
 
     fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, Exit> {
