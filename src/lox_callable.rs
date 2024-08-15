@@ -136,8 +136,8 @@ impl LoxClass {
 impl LoxCallable for LoxClass {
     fn call(
         &self,
-        interpreter: &mut Interpreter,
-        arguments: &[LiteralTypes],
+        _interpreter: &mut Interpreter,
+        _arguments: &[LiteralTypes],
     ) -> Result<LiteralTypes, Exit> {
         let instance = LoxInstance::new(Rc::new(self.clone()));
         Ok(LiteralTypes::Callable(Callable::Instance(Rc::new(

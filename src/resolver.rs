@@ -11,6 +11,7 @@ pub struct Resolver<'a> {
     interpreter: &'a mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -20,12 +21,19 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum ClassType {
+    None,
+    Class,
+}
+
 impl<'a> Resolver<'a> {
     pub fn new(interpreter: &'a mut Interpreter) -> Self {
         Resolver {
             interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -160,6 +168,9 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
     }
 
     fn visit_class(&mut self, stmt: &Class) -> Result<(), ParserError> {
+        let enclosing_class = self.current_class;
+        self.current_class = ClassType::Class;
+
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
 
@@ -176,6 +187,7 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
         }
 
         self.end_scope();
+        self.current_class = enclosing_class;
 
         Ok(())
     }
@@ -243,6 +255,11 @@ impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
     }
 
     fn visit_this(&mut self, expr: &This) -> Result<(), ParserError> {
+        if self.current_class == ClassType::None {
+            crate::error(expr.keyword.clone(), "Can't use 'this' outside of a class.");
+            return Err(ParserError {});
+        }
+
         self.resolve_local(&Expr::This(expr.clone()), expr.keyword.clone());
         Ok(())
     }
