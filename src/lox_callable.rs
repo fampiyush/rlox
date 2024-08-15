@@ -1,3 +1,4 @@
+use crate::token::TokenType;
 use crate::{
     environment::Environment,
     interpreter::{Exit, Interpreter},
@@ -40,6 +41,7 @@ impl PartialEq for Callable {
 pub struct LoxFunction {
     pub declaration: Box<Function>,
     pub closure: Rc<RefCell<Environment>>,
+    pub is_initializer: bool,
 }
 
 #[derive(Clone)]
@@ -64,10 +66,15 @@ pub trait LoxCallable {
 }
 
 impl LoxFunction {
-    pub fn new(declaration: Function, closure: Rc<RefCell<Environment>>) -> Self {
+    pub fn new(
+        declaration: Function,
+        closure: Rc<RefCell<Environment>>,
+        is_initializer: bool,
+    ) -> Self {
         LoxFunction {
             declaration: Box::new(declaration),
             closure,
+            is_initializer,
         }
     }
 
@@ -82,6 +89,7 @@ impl LoxFunction {
         LoxFunction {
             declaration: self.declaration.clone(),
             closure: environment,
+            is_initializer: self.is_initializer,
         }
     }
 }
@@ -108,6 +116,17 @@ impl LoxCallable for LoxFunction {
                     return Err(Exit::RuntimeError);
                 }
             }
+        }
+        if self.is_initializer {
+            return self.closure.borrow().get_at(
+                0,
+                Token {
+                    ttype: TokenType::This,
+                    lexeme: "this".to_string(),
+                    literal: LiteralTypes::Nil,
+                    line: self.declaration.name.line,
+                },
+            );
         }
         Ok(LiteralTypes::Nil)
     }
@@ -155,7 +174,7 @@ impl LoxCallable for LoxClass {
     fn arity(&self) -> usize {
         let initializer = self.find_method("init");
         if let Some(init) = initializer {
-            self.initializer.arity()
+            init.arity()
         } else {
             0
         }
