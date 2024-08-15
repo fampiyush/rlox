@@ -136,17 +136,29 @@ impl LoxClass {
 impl LoxCallable for LoxClass {
     fn call(
         &self,
-        _interpreter: &mut Interpreter,
-        _arguments: &[LiteralTypes],
+        interpreter: &mut Interpreter,
+        arguments: &[LiteralTypes],
     ) -> Result<LiteralTypes, Exit> {
-        let instance = LoxInstance::new(Rc::new(self.clone()));
-        Ok(LiteralTypes::Callable(Callable::Instance(Rc::new(
-            RefCell::new(instance),
+        let instance = Rc::new(RefCell::new(LoxInstance::new(Rc::new(self.clone()))));
+
+        let initializer = self.find_method("init");
+        if let Some(init) = initializer {
+            init.bind(Rc::clone(&instance))
+                .call(interpreter, arguments)?;
+        }
+
+        Ok(LiteralTypes::Callable(Callable::Instance(Rc::clone(
+            &instance,
         ))))
     }
 
     fn arity(&self) -> usize {
-        0
+        let initializer = self.find_method("init");
+        if let Some(init) = initializer {
+            self.initializer.arity()
+        } else {
+            0
+        }
     }
 }
 
