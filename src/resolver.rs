@@ -183,6 +183,10 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
 
+        if let Some(sc) = &stmt.super_class {
+            self.resolve_expr(sc);
+        }
+
         self.begin_scope();
         self.scopes
             .last_mut()
