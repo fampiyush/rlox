@@ -157,7 +157,14 @@ impl LoxClass {
     }
 
     pub fn find_method(&self, name: &str) -> Option<&LoxFunction> {
-        self.methods.get(name)
+        let f = self.methods.get(name);
+        if f.is_none() {
+            if let Some(sc) = &self.super_class {
+                return sc.find_method(name);
+            }
+        }
+
+        f
     }
 }
 
