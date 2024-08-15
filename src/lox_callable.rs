@@ -47,6 +47,7 @@ pub struct LoxFunction {
 #[derive(Clone)]
 pub struct LoxClass {
     pub name: String,
+    pub super_class: Option<Box<LoxClass>>,
     pub methods: HashMap<String, LoxFunction>,
 }
 
@@ -143,8 +144,16 @@ impl fmt::Display for LoxFunction {
 }
 
 impl LoxClass {
-    pub fn new(name: String, methods: HashMap<String, LoxFunction>) -> Self {
-        LoxClass { name, methods }
+    pub fn new(
+        name: String,
+        super_class: Option<LoxClass>,
+        methods: HashMap<String, LoxFunction>,
+    ) -> Self {
+        LoxClass {
+            name,
+            super_class: super_class.map(Box::new),
+            methods,
+        }
     }
 
     pub fn find_method(&self, name: &str) -> Option<&LoxFunction> {

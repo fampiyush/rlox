@@ -215,6 +215,17 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
     }
 
     fn visit_class(&mut self, stmt: &Class) -> Result<(), Exit> {
+        let mut s_c = None;
+        if let Some(sc) = &stmt.super_class {
+            let super_class = self.evaluate(sc)?;
+            if let LiteralTypes::Callable(Callable::Class(c)) = super_class {
+                s_c = Some(c);
+            } else {
+                report(stmt.name.line, "Superclass must be a class.");
+                return Err(Exit::RuntimeError);
+            }
+        }
+
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme.clone(), LiteralTypes::Nil);
@@ -231,7 +242,7 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
             }
         }
 
-        let class = LoxClass::new(stmt.name.lexeme.clone(), methods);
+        let class = LoxClass::new(stmt.name.lexeme.clone(), s_c, methods);
         self.environment
             .borrow_mut()
             .assign(&stmt.name, LiteralTypes::Callable(Callable::Class(class)))?;

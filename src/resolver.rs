@@ -183,8 +183,12 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
 
-        if let Some(sc) = &stmt.super_class {
-            self.resolve_expr(sc);
+        if let Some(Expr::Variable(sc)) = &stmt.super_class {
+            if stmt.name.lexeme.eq(&sc.name.lexeme) {
+                crate::error(sc.name.clone(), "A class can't inherit from itself.");
+                return Err(ParserError {});
+            }
+            self.resolve_expr(&Expr::Variable(sc.clone()));
         }
 
         self.begin_scope();
