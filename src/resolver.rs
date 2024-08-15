@@ -18,6 +18,7 @@ pub struct Resolver<'a> {
 enum FunctionType {
     None,
     Function,
+    Initializer,
     Method,
 }
 
@@ -156,7 +157,15 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
         if self.current_function == FunctionType::None {
             crate::error(stmt.keyword.clone(), "Can't return from top-level code.");
             return Err(ParserError {});
+        } else if self.current_function == FunctionType::Initializer {
+            dbg!(&stmt.value);
+            crate::error(
+                stmt.keyword.clone(),
+                "Can't return a value from an initializer",
+            );
+            return Err(ParserError {});
         }
+
         self.resolve_expr(&stmt.value);
         Ok(())
     }
@@ -182,7 +191,12 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
 
         for method in stmt.methods.iter() {
             if let Stmt::Function(m) = method {
-                self.resolve_function(m, FunctionType::Method)?;
+                let declaration = if m.name.lexeme.eq("init") {
+                    FunctionType::Initializer
+                } else {
+                    FunctionType::Method
+                };
+                self.resolve_function(m, declaration)?;
             }
         }
 
