@@ -1,5 +1,6 @@
 use ::std::{error::Error, fs, io, process};
 use std::io::Write;
+use std::path::Path;
 
 use interpreter::Interpreter;
 use parser::Parser;
@@ -53,6 +54,17 @@ pub fn run_prompt() {
 
 // Called when an argument is provided
 pub fn run_file(arg: &str) -> Result<(), Box<dyn Error>> {
+    let ext = Path::new(arg).extension();
+    dbg!(&ext);
+    match ext {
+        Some(e) => {
+            if e != "lox" {
+                return Err("Only '.lox' file supported.".into());
+            }
+        }
+        None => return Err("Cannot identify file extension.".into()),
+    }
+
     let content = fs::read_to_string(arg);
     match &content {
         Ok(c) => {
