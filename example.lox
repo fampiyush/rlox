@@ -1,0 +1,22 @@
+class Doughnut {
+  cook() {
+    print "Fry until golden brown.";
+  }
+}
+
+class BostonCream < Doughnut {
+  cook() {
+    super.cook();
+    print "Pipe full of custard and coat with chocolate.";
+  }
+}
+
+fun cooking(num) {
+    var dish = BostonCream();
+    print num;
+    dish.cook();
+}
+
+for(var i=0; i<5; i=i+1) {
+    cooking(i);
+}
