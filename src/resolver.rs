@@ -26,6 +26,7 @@ enum FunctionType {
 enum ClassType {
     None,
     Class,
+    SubClass,
 }
 
 impl<'a> Resolver<'a> {
@@ -188,6 +189,7 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
                 crate::error(sc.name.clone(), "A class can't inherit from itself.");
                 return Err(ParserError {});
             }
+            self.current_class = ClassType::SubClass;
             self.resolve_expr(&Expr::Variable(sc.clone()));
             self.begin_scope();
             self.scopes
@@ -297,6 +299,19 @@ impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
     }
 
     fn visit_super(&mut self, expr: &Super) -> Result<(), ParserError> {
+        if self.current_class == ClassType::None {
+            crate::error(
+                expr.keyword.clone(),
+                "Can't use 'super' outside of a class.",
+            );
+            return Err(ParserError {});
+        } else if self.current_class != ClassType::SubClass {
+            crate::error(
+                expr.keyword.clone(),
+                "Can't use 'super' in a class with no superclass.",
+            );
+            return Err(ParserError {});
+        }
         self.resolve_local(&Expr::Super(expr.clone()), expr.keyword.clone());
         Ok(())
     }
