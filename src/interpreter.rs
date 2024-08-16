@@ -254,7 +254,7 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
 
         let class = LoxClass::new(stmt.name.lexeme.clone(), s_c, methods);
 
-        if let Some(Expr::Super(_)) = &stmt.super_class {
+        if let Some(Expr::Variable(_)) = &stmt.super_class {
             let enclosing = Rc::clone(self.environment.borrow_mut().enclosing.as_ref().unwrap());
             self.environment = enclosing;
         }
