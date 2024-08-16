@@ -299,7 +299,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr, ParserError> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.token_match(&[Equal]) {
             let equals = self.previous();
@@ -322,6 +322,40 @@ impl Parser {
                 self.error(&equals, "Invalid assignment target.");
                 return Err(ParserError {});
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr, ParserError> {
+        let mut expr = self.and()?;
+
+        while self.token_match(&[Or]) {
+            let operator = self.previous();
+            let right = self.and()?;
+            expr = Expr::Logical(Logical {
+                uuid: uuid_next(),
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            })
+        }
+
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr, ParserError> {
+        let mut expr = self.equality()?;
+
+        while self.token_match(&[And]) {
+            let operator = self.previous();
+            let right = self.equality()?;
+            expr = Expr::Logical(Logical {
+                uuid: uuid_next(),
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            })
         }
 
         Ok(expr)

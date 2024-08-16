@@ -7,6 +7,7 @@ pub enum Expr {
     Binary(Binary),
     Grouping(Grouping),
     Literal(Literal),
+    Logical(Logical),
     Unary(Unary),
     Variable(Variable),
     Call(Call),
@@ -41,6 +42,14 @@ pub struct Grouping {
 pub struct Literal {
     pub uuid: usize,
     pub value: LiteralTypes,
+}
+
+#[derive(Debug, Clone)]
+pub struct Logical {
+    pub uuid: usize,
+    pub left: Box<Expr>,
+    pub operator: Token,
+    pub right: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +106,7 @@ pub trait Visitor<T> {
     fn visit_binary(&mut self, expr: &Binary) -> T;
     fn visit_grouping(&mut self, expr: &Grouping) -> T;
     fn visit_literal(&self, expr: &Literal) -> T;
+    fn visit_logical(&mut self, expr: &Logical) -> T;
     fn visit_unary(&mut self, expr: &Unary) -> T;
     fn visit_variable(&mut self, expr: &Variable) -> T;
     fn visit_call(&mut self, expr: &Call) -> T;
@@ -113,6 +123,7 @@ impl Expr {
             Expr::Binary(binary) => visitor.visit_binary(binary),
             Expr::Grouping(grouping) => visitor.visit_grouping(grouping),
             Expr::Literal(literal) => visitor.visit_literal(literal),
+            Expr::Logical(logical) => visitor.visit_logical(logical),
             Expr::Unary(unary) => visitor.visit_unary(unary),
             Expr::Variable(variable) => visitor.visit_variable(variable),
             Expr::Call(call) => visitor.visit_call(call),
@@ -129,6 +140,7 @@ impl Expr {
             Expr::Binary(e) => e.uuid,
             Expr::Grouping(e) => e.uuid,
             Expr::Literal(e) => e.uuid,
+            Expr::Logical(e) => e.uuid,
             Expr::Unary(e) => e.uuid,
             Expr::Variable(e) => e.uuid,
             Expr::Call(e) => e.uuid,

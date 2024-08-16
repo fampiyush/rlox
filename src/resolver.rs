@@ -271,6 +271,12 @@ impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
         Ok(())
     }
 
+    fn visit_logical(&mut self, expr: &Logical) -> Result<(), ParserError> {
+        self.resolve_expr(&expr.left);
+        self.resolve_expr(&expr.right);
+        Ok(())
+    }
+
     fn visit_unary(&mut self, expr: &Unary) -> Result<(), ParserError> {
         self.resolve_expr(&expr.right);
         Ok(())

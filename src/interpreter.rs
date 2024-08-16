@@ -290,6 +290,20 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
         Ok(value)
     }
 
+    fn visit_logical(&mut self, expr: &Logical) -> Result<LiteralTypes, Exit> {
+        let left = self.evaluate(&expr.left)?;
+
+        if let TokenType::Or = expr.operator.ttype {
+            if self.is_truthy(&left) {
+                return Ok(left);
+            }
+        } else if !self.is_truthy(&left) {
+            return Ok(left);
+        }
+
+        self.evaluate(&expr.right)
+    }
+
     fn visit_unary(&mut self, expr: &Unary) -> Result<LiteralTypes, Exit> {
         let right = self.evaluate(&expr.right)?;
 
