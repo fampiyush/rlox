@@ -13,6 +13,7 @@ pub enum Expr {
     Get(Get),
     Set(Set),
     This(This),
+    Super(Super),
 }
 
 #[derive(Debug, Clone)]
@@ -84,6 +85,13 @@ pub struct This {
     pub keyword: Token,
 }
 
+#[derive(Debug, Clone)]
+pub struct Super {
+    pub uuid: usize,
+    pub keyword: Token,
+    pub method: Token,
+}
+
 pub trait Visitor<T> {
     fn visit_assignment(&mut self, expr: &Assignment) -> T;
     fn visit_binary(&mut self, expr: &Binary) -> T;
@@ -95,6 +103,7 @@ pub trait Visitor<T> {
     fn visit_get(&mut self, expr: &Get) -> T;
     fn visit_set(&mut self, expr: &Set) -> T;
     fn visit_this(&mut self, expr: &This) -> T;
+    fn visit_super(&mut self, expr: &Super) -> T;
 }
 
 impl Expr {
@@ -110,6 +119,7 @@ impl Expr {
             Expr::Get(get) => visitor.visit_get(get),
             Expr::Set(set) => visitor.visit_set(set),
             Expr::This(this) => visitor.visit_this(this),
+            Expr::Super(s) => visitor.visit_super(s),
         }
     }
 
@@ -125,6 +135,7 @@ impl Expr {
             Expr::Get(e) => e.uuid,
             Expr::Set(e) => e.uuid,
             Expr::This(e) => e.uuid,
+            Expr::Super(e) => e.uuid,
         }
     }
 }

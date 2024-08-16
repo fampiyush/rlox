@@ -485,6 +485,17 @@ impl Parser {
                     value: self.previous().literal,
                 }))
             }
+            TokenType::Super => {
+                self.advance();
+                let keyword = self.previous();
+                self.consume(Dot, "Expect '.' after 'super'.")?;
+                let method = self.consume(Identifier, "Expect superclass method name.")?;
+                Ok(Expr::Super(crate::expr::Super {
+                    uuid: uuid_next(),
+                    keyword,
+                    method,
+                }))
+            }
             TokenType::This => {
                 self.advance();
                 Ok(Expr::This(crate::expr::This {
