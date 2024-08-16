@@ -381,9 +381,12 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
     }
 
     fn visit_super(&mut self, expr: &Super) -> Result<LiteralTypes, Exit> {
-        let distance = self.locals.get(&Expr::Super(expr.clone())).unwrap();
+        let distance = self.locals.get(&Expr::Super(expr.clone()));
+        if distance.is_none() {
+            return Err(Exit::RuntimeError);
+        }
         let super_class = self.environment.borrow().get_at(
-            *distance,
+            *distance.unwrap(),
             Token {
                 ttype: TokenType::Super,
                 lexeme: "super".to_string(),
@@ -392,7 +395,7 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
             },
         )?;
         let object = self.environment.borrow().get_at(
-            distance - 1,
+            distance.unwrap() - 1,
             Token {
                 ttype: TokenType::This,
                 lexeme: "this".to_string(),
