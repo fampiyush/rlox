@@ -215,11 +215,12 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
     }
 
     fn visit_class(&mut self, stmt: &Class) -> Result<(), Exit> {
+        let mut super_class = LiteralTypes::Nil;
         let mut s_c = None;
         if let Some(sc) = &stmt.super_class {
-            let super_class = self.evaluate(sc)?;
-            if let LiteralTypes::Callable(Callable::Class(c)) = super_class {
-                s_c = Some(c);
+            super_class = self.evaluate(sc)?;
+            if let LiteralTypes::Callable(Callable::Class(c)) = &super_class {
+                s_c = Some(c.clone());
             } else {
                 report(stmt.name.line, "Superclass must be a class.");
                 return Err(Exit::RuntimeError);
@@ -229,6 +230,15 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
         self.environment
             .borrow_mut()
             .define(stmt.name.lexeme.clone(), LiteralTypes::Nil);
+
+        if let Some(Expr::Variable(_)) = &stmt.super_class {
+            self.environment = Rc::new(RefCell::new(Environment::new_with_enclosing(Rc::clone(
+                &self.environment,
+            ))));
+            self.environment
+                .borrow_mut()
+                .define("super".to_string(), super_class);
+        }
 
         let mut methods = HashMap::new();
         for method in stmt.methods.iter() {
@@ -243,6 +253,12 @@ impl stmt::Visitor<Result<(), Exit>> for Interpreter {
         }
 
         let class = LoxClass::new(stmt.name.lexeme.clone(), s_c, methods);
+
+        if let Some(Expr::Super(_)) = &stmt.super_class {
+            let enclosing = Rc::clone(self.environment.borrow_mut().enclosing.as_ref().unwrap());
+            self.environment = enclosing;
+        }
+
         self.environment
             .borrow_mut()
             .assign(&stmt.name, LiteralTypes::Callable(Callable::Class(class)))?;
@@ -362,6 +378,45 @@ impl expr::Visitor<Result<LiteralTypes, Exit>> for Interpreter {
 
     fn visit_this(&mut self, expr: &This) -> Result<LiteralTypes, Exit> {
         self.look_up_variable(expr.keyword.clone(), Expr::This(expr.clone()))
+    }
+
+    fn visit_super(&mut self, expr: &Super) -> Result<LiteralTypes, Exit> {
+        let distance = self.locals.get(&Expr::Super(expr.clone())).unwrap();
+        let super_class = self.environment.borrow().get_at(
+            *distance,
+            Token {
+                ttype: TokenType::Super,
+                lexeme: "super".to_string(),
+                literal: LiteralTypes::Nil,
+                line: expr.method.line,
+            },
+        )?;
+        let object = self.environment.borrow().get_at(
+            distance - 1,
+            Token {
+                ttype: TokenType::This,
+                lexeme: "this".to_string(),
+                literal: LiteralTypes::Nil,
+                line: expr.method.line,
+            },
+        )?;
+
+        if let LiteralTypes::Callable(Callable::Class(c)) = &super_class {
+            let method = c.find_method(&expr.method.lexeme);
+            if let LiteralTypes::Callable(Callable::Instance(ins)) = object {
+                match method {
+                    Some(m) => return Ok(LiteralTypes::Callable(Callable::Function(m.bind(ins)))),
+                    None => {
+                        report(
+                            expr.method.line,
+                            &format!("Undefined property {}.", expr.method.lexeme),
+                        );
+                        return Err(Exit::RuntimeError);
+                    }
+                }
+            }
+        }
+        Err(Exit::RuntimeError)
     }
 
     fn visit_binary(&mut self, expr: &Binary) -> Result<LiteralTypes, Exit> {

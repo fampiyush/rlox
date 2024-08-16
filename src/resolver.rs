@@ -189,6 +189,11 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
                 return Err(ParserError {});
             }
             self.resolve_expr(&Expr::Variable(sc.clone()));
+            self.begin_scope();
+            self.scopes
+                .last_mut()
+                .unwrap()
+                .insert("super".to_string(), true);
         }
 
         self.begin_scope();
@@ -209,6 +214,11 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
         }
 
         self.end_scope();
+
+        if let Some(Expr::Variable(_sc)) = &stmt.super_class {
+            self.end_scope();
+        }
+
         self.current_class = enclosing_class;
 
         Ok(())
@@ -283,6 +293,11 @@ impl<'a> crate::expr::Visitor<Result<(), ParserError>> for Resolver<'a> {
         }
 
         self.resolve_local(&Expr::This(expr.clone()), expr.keyword.clone());
+        Ok(())
+    }
+
+    fn visit_super(&mut self, expr: &Super) -> Result<(), ParserError> {
+        self.resolve_local(&Expr::Super(expr.clone()), expr.keyword.clone());
         Ok(())
     }
 }
