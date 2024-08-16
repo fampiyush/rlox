@@ -55,7 +55,6 @@ pub fn run_prompt() {
 // Called when an argument is provided
 pub fn run_file(arg: &str) -> Result<(), Box<dyn Error>> {
     let ext = Path::new(arg).extension();
-    dbg!(&ext);
     match ext {
         Some(e) => {
             if e != "lox" {
@@ -79,19 +78,24 @@ fn run(content: &str) {
     if content.trim().to_lowercase() == "exit" {
         process::exit(0);
     }
+    //scanning
     let mut scanner = Scanner::new(content.trim().to_string());
     let tokens = scanner.scan_tokens();
 
+    //parsing
     let mut parser = Parser::new(tokens);
     let statements = parser.parse();
 
     match &statements {
         Ok(e) => {
             let mut interpreter = Interpreter::new();
+
+            //resolving
             let mut resolver = Resolver::new(&mut interpreter);
             let r = resolver.resolve_each(e);
             match &r {
                 Ok(_) => {
+                    //interpreting
                     let interpreted = interpreter.interpret(e);
 
                     match &interpreted {
