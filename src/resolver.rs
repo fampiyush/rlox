@@ -159,7 +159,6 @@ impl<'a> crate::stmt::Visitor<Result<(), ParserError>> for Resolver<'a> {
             crate::error(stmt.keyword.clone(), "Can't return from top-level code.");
             return Err(ParserError {});
         } else if self.current_function == FunctionType::Initializer {
-            dbg!(&stmt.value);
             crate::error(
                 stmt.keyword.clone(),
                 "Can't return a value from an initializer",
